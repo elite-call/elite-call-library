@@ -1,462 +1,418 @@
-/* =============================================================================
-   ELITE CALL — TRADING CARDS · CARD STYLES
-   Theming is layered:  .ec-card[data-variant][data-tier]  -> CSS variables
-   ============================================================================= */
+/* TradingCard component — shared by gallery + pack pages.
+   Exposes: window.TradingCard, window.formatStat, window.Stars */
 
-:root {
-  --navy-900: #0b1f3a;
-  --navy-800: #122a4d;
-  --navy-700: #1b3a63;
-  --gold:     #d8a72a;
-  --gold-lt:  #f2cf6b;
-  --red:      #c2402f;
-  --cream:    #f3ead4;
-  --paper:    #efe6cf;
-  --ink:      #1c2740;
-}
+const ECTiers = () => window.EliteData.TIERS;
+const ECStats = () => window.EliteData.STATS;
 
-/* ---- Card shell ---------------------------------------------------------- */
-.ec-card {
-  position: relative;
-  width: 320px;
-  aspect-ratio: 320 / 446;
-  border-radius: 16px;
-  font-family: 'Oswald', sans-serif;
-  color: var(--c-ink);
-  user-select: none;
-  perspective: 1400px;
-  --c-bg: var(--cream);
-  --c-ink: var(--ink);
-  --c-frame: var(--navy-800);
-  --c-accent: var(--gold);
-  --c-band: var(--navy-800);
-  --c-foil: none;
+// Format a stat for display. Handles null → "—", seconds, floats, etc.
+function formatStat(stat, raw) {
+  if (raw == null || (typeof raw === 'number' && isNaN(raw))) {
+    return { val: '—', unit: '' };
+  }
+  if (stat.isSec) {
+    const s = Math.round(Number(raw));
+    if (s >= 60) return { val: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, unit: '' };
+    return { val: s, unit: 's' };
+  }
+  if (stat.key === 'lph')  return { val: Number(raw).toFixed(1), unit: '' };
+  if (stat.key === 'dials') {
+    const n = Math.round(Number(raw));
+    return { val: n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n), unit: '' };
+  }
+  if (stat.unit === '%') return { val: parseFloat(raw).toFixed(1), unit: '%' };
+  return { val: Math.round(Number(raw)), unit: stat.unit };
 }
-.ec-flip {
-  position: absolute; inset: 0;
-  transform-style: preserve-3d;
-  transition: transform 0.7s cubic-bezier(.2,.8,.25,1);
-}
-.ec-card[data-flipped="true"] .ec-flip { transform: rotateY(180deg); }
-.ec-face {
-  position: absolute; inset: 0;
-  backface-visibility: hidden;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--c-bg);
-  box-shadow: 0 18px 40px -12px rgba(5,12,28,.65), 0 2px 0 rgba(255,255,255,.25) inset;
-  border: 1px solid rgba(0,0,0,.15);
-}
-.ec-face--back { transform: rotateY(180deg); }
+window.formatStat = formatStat;
 
-/* foil/holo overlay layer */
-.ec-foil {
-  position: absolute; inset: 0; border-radius: 16px;
-  pointer-events: none; mix-blend-mode: screen; opacity: var(--foil-strength, 0);
-  background: var(--c-foil);
+function fmtDur(sec) {
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/* ---- Inner padding frame -------------------------------------------------- */
-.ec-inner {
-  position: absolute; inset: 10px;
-  border: 2px solid var(--c-frame);
-  border-radius: 10px;
-  padding: 11px 12px 12px;
-  display: flex; flex-direction: column;
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.04));
+// Shared WebAudio context for demo playback
+let _ecAudioCtx = null;
+function demoTone() {
+  try {
+    _ecAudioCtx = _ecAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const ctx  = _ecAudioCtx;
+    const osc  = ctx.createOscillator(), gain = ctx.createGain();
+    const lfo  = ctx.createOscillator(), lfoG = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.value = 220;
+    lfo.type = 'sine'; lfo.frequency.value = 3.5; lfoG.gain.value = 40;
+    lfo.connect(lfoG); lfoG.connect(osc.frequency);
+    gain.gain.value = 0.04;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); lfo.start();
+    return () => { try { osc.stop(); lfo.stop(); } catch (e) {} };
+  } catch (e) { return () => {}; }
 }
 
-/* ---- Top row -------------------------------------------------------------- */
-.ec-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.ec-stars { display: flex; gap: 2px; font-size: 13px; color: var(--c-accent); letter-spacing: 1px;
-  filter: drop-shadow(0 1px 0 rgba(0,0,0,.35)); }
-.ec-star-empty { opacity: .22; }
-.ec-setbadge {
-  font-family: 'Anton', sans-serif; font-size: 14px; letter-spacing: .5px;
-  text-transform: uppercase; color: var(--navy-900);
-  background: linear-gradient(180deg, var(--gold-lt), var(--gold));
-  padding: 3px 12px; border-radius: 999px;
-  border: 1.5px solid rgba(0,0,0,.28);
-  box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 2px 3px rgba(0,0,0,.25);
-  white-space: nowrap;
-}
-.ec-cardno { font-size: 12px; font-weight: 600; opacity: .72; letter-spacing: .5px; }
+// ── CallPlayer ────────────────────────────────────────────────────────────────
+function CallPlayer({ call }) {
+  const [playing, setPlaying] = React.useState(false);
+  const [prog,    setProg]    = React.useState(0);
+  const [open,    setOpen]    = React.useState(false);
+  const raf      = React.useRef(null);
+  const stopTone = React.useRef(null);
+  const audioRef = React.useRef(null);
+  const liveSrc  = window.Trellus ? window.Trellus.recordingUrl(call) : (call.src || null);
 
-/* ---- Portrait ------------------------------------------------------------- */
-.ec-portrait {
-  position: relative; margin-top: 9px;
-  aspect-ratio: 1 / 1; border-radius: 8px; overflow: hidden;
-  border: 2px solid var(--c-frame);
-  background:
-    radial-gradient(120% 120% at 50% 12%, rgba(255,255,255,.18), transparent 60%),
-    var(--c-portrait, linear-gradient(160deg, var(--navy-700), var(--navy-900)));
-}
-.ec-portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ec-halftone {
-  position: absolute; inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,.16) 1.4px, transparent 1.5px);
-  background-size: 9px 9px; opacity: .5;
-}
-.ec-monogram {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: 'Anton', sans-serif; font-size: 92px; line-height: 1;
-  color: rgba(255,255,255,.92);
-  text-shadow: 0 4px 14px rgba(0,0,0,.45);
-}
-.ec-teamtag {
-  position: absolute; left: 8px; bottom: 8px;
-  font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-  color: #fff; background: rgba(0,0,0,.42); backdrop-filter: blur(2px);
-  padding: 2px 8px; border-radius: 4px;
-}
+  const stop = () => {
+    setPlaying(false);
+    if (raf.current) cancelAnimationFrame(raf.current);
+    if (stopTone.current) { stopTone.current(); stopTone.current = null; }
+    if (audioRef.current) audioRef.current.pause();
+  };
 
-/* ---- Name banner ---------------------------------------------------------- */
-.ec-namebar {
-  margin-top: 10px; text-align: center;
-  background: linear-gradient(180deg, var(--c-band), color-mix(in srgb, var(--c-band) 70%, #000));
-  border-radius: 7px; padding: 7px 8px;
-  border: 1.5px solid rgba(0,0,0,.3);
-  box-shadow: 0 1px 0 rgba(255,255,255,.18) inset;
-}
-.ec-name {
-  font-family: 'Anton', sans-serif; color: #fff;
-  font-size: 24px; line-height: 1; letter-spacing: .5px; text-transform: uppercase;
-  text-shadow: 0 2px 4px rgba(0,0,0,.4);
-}
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (playing) { stop(); return; }
+    setPlaying(true);
+    if (liveSrc && audioRef.current) {
+      audioRef.current.currentTime = prog * (audioRef.current.duration || 0) || 0;
+      audioRef.current.play().catch(() => {});
+      return;
+    }
+    stopTone.current = demoTone();
+    const dur = 6000; const start = performance.now() - prog * dur;
+    const step = (t) => {
+      const p = Math.min(1, (t - start) / dur);
+      setProg(p);
+      if (p >= 1) { stop(); setProg(0); }
+      else raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+  };
 
-/* ---- Stat grid ------------------------------------------------------------ */
-.ec-stats { margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.ec-stat {
-  background: linear-gradient(180deg, var(--c-band), color-mix(in srgb, var(--c-band) 75%, #000));
-  border-radius: 7px; padding: 7px 4px 5px; text-align: center; color: #fff;
-  border: 1px solid rgba(0,0,0,.25);
-}
-.ec-stat-val { font-family: 'Anton', sans-serif; font-size: 21px; line-height: 1; }
-.ec-stat-val small { font-size: 11px; opacity: .8; }
-.ec-stat-lbl { font-size: 9.5px; letter-spacing: .8px; text-transform: uppercase; opacity: .72; margin-top: 3px; }
+  React.useEffect(() => () => stop(), []);
+  const bars = React.useMemo(() => Array.from({ length: 22 }, () => 0.25 + Math.random() * 0.75), []);
+  const sentColor = { positive: '#5fd29a', mixed: '#e0b24a', neutral: '#9aa6b8', negative: '#e0775f' }[(call.sentiment || '').toLowerCase()] || '#9aa6b8';
 
-/* ---- Flavor + footer ------------------------------------------------------ */
-.ec-flavor {
-  margin-top: auto; padding-top: 9px;
-  font-family: 'Roboto Slab', Georgia, serif; font-style: italic;
-  font-size: 11.5px; line-height: 1.35; text-align: center; color: var(--c-ink);
-  opacity: .82; text-wrap: pretty;
-}
-.ec-footer {
-  margin-top: 8px; display: flex; align-items: center; justify-content: space-between;
-  border-top: 1px solid rgba(0,0,0,.18); padding-top: 7px;
-}
-.ec-logo { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
-  letter-spacing: .5px; text-transform: uppercase; color: var(--c-ink); opacity: .8; }
-.ec-logo-dot { width: 13px; height: 13px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, var(--navy-700) 60%);
-  box-shadow: 0 0 0 1.5px var(--gold); }
-.ec-season { font-size: 10px; opacity: .6; border: 1px solid rgba(0,0,0,.25);
-  border-radius: 4px; padding: 2px 7px; }
+  const trellusHref = call.trellusLink || call.transcriptLink || 'https://app.trellus.ai';
+  const isReal = !!(call.trellusLink || call.transcriptLink);
 
-/* ---- Back face ------------------------------------------------------------ */
-.ec-back-inner { position: absolute; inset: 10px; border: 2px solid var(--c-frame);
-  border-radius: 10px; padding: 12px 13px; display: flex; flex-direction: column;
-  overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,.05)); }
-.ec-back-inner::-webkit-scrollbar { width: 6px; }
-.ec-back-inner::-webkit-scrollbar-thumb { background: rgba(127,127,127,.35); border-radius: 3px; }
-
-/* Call player */
-.ec-call { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0;
-  padding: 6px; border-radius: 8px; background: rgba(127,127,127,.10);
-  border: 1px solid rgba(127,127,127,.18); }
-.ec-play { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-  border: none; color: #fff; font-size: 11px; line-height: 1; display: grid; place-items: center;
-  background: var(--c-band); box-shadow: 0 2px 5px rgba(0,0,0,.3); }
-.ec-play.on { background: var(--c-accent); color: #10182a; }
-.ec-call-body { flex: 1; min-width: 0; }
-.ec-call-top { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
-.ec-call-title { font-size: 11px; font-weight: 600; letter-spacing: .3px; cursor: pointer;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ec-call-dur { font-size: 10px; opacity: .6; font-variant-numeric: tabular-nums; }
-.ec-wave { display: flex; align-items: center; gap: 1.5px; height: 16px; margin: 3px 0; color: var(--c-ink); }
-.ec-wave span { flex: 1; border-radius: 1px; min-height: 2px; transition: opacity .1s, background .1s; }
-.ec-call-meta { display: flex; justify-content: space-between; align-items: center; }
-.ec-sent { font-size: 9.5px; letter-spacing: .3px; }
-.ec-call-links { display: flex; align-items: center; gap: 8px; }
-.ec-demo { font-size: 8.5px; letter-spacing: 1px; text-transform: uppercase; opacity: .5; }
-.ec-trellus-link { font-size: 8.5px; letter-spacing: .5px; text-transform: uppercase; color: var(--c-accent);
-  text-decoration: none; border: 1px solid rgba(127,127,127,.3); border-radius: 4px; padding: 1px 5px; }
-.ec-trellus-link:hover { background: rgba(127,127,127,.15); }
-.ec-cobadge { position: absolute; right: 8px; bottom: 8px; background: #fff; border-radius: 4px;
-  padding: 2px 4px; box-shadow: 0 1px 4px rgba(0,0,0,.3); display: grid; place-items: center; }
-.ec-cobadge img { height: 13px; width: auto; display: block; }
-.ec-transcript { font-family: 'Roboto Slab', Georgia, serif; font-style: italic; font-size: 10.5px;
-  line-height: 1.35; opacity: .8; margin-top: 5px; }
-.ec-back-head { display: flex; justify-content: space-between; align-items: baseline; }
-.ec-back-name { font-family: 'Anton', sans-serif; font-size: 19px; text-transform: uppercase; }
-.ec-back-ovr { font-family: 'Anton', sans-serif; font-size: 30px; color: var(--c-accent); line-height: 1; }
-.ec-back-ovr small { display: block; font-size: 9px; letter-spacing: 1px; color: var(--c-ink); opacity: .6; }
-.ec-section-t { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--c-accent); margin: 12px 0 6px; font-weight: 700;
-  border-bottom: 1px solid rgba(0,0,0,.15); padding-bottom: 3px; }
-.ec-bar-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
-.ec-bar-lbl { font-size: 10px; width: 64px; text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
-.ec-bar-track { flex: 1; height: 7px; border-radius: 4px; background: rgba(0,0,0,.14); overflow: hidden; }
-.ec-bar-fill { height: 100%; border-radius: 4px; background: var(--c-band); }
-.ec-bar-num { font-size: 11px; font-weight: 700; width: 26px; text-align: right; }
-.ec-sg { font-size: 11px; line-height: 1.4; margin: 3px 0; display: flex; gap: 6px; }
-.ec-sg-mark { color: var(--c-accent); font-weight: 700; }
-.ec-spark { display: flex; align-items: flex-end; gap: 3px; height: 34px; margin-top: 4px; }
-.ec-spark span { flex: 1; background: var(--c-band); border-radius: 2px 2px 0 0; opacity: .85; }
-
-/* =============================================================================
-   VARIANTS
-   ============================================================================= */
-/* Vintage cardstock (default) */
-.ec-card[data-variant="vintage"] .ec-face {
-  background:
-    radial-gradient(120% 90% at 50% 0%, #fbf4e2, var(--cream)),
-    var(--cream);
-}
-.ec-card[data-variant="vintage"] .ec-face::after {
-  content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
-  background-image: radial-gradient(rgba(120,90,40,.07) 1px, transparent 1.3px);
-  background-size: 4px 4px;
+  return (
+    <div className="ec-call" onClick={(e) => e.stopPropagation()}>
+      {liveSrc && <audio ref={audioRef} src={liveSrc}
+        onTimeUpdate={(e) => setProg(e.target.currentTime / (e.target.duration || 1))}
+        onEnded={() => { stop(); setProg(0); }} />}
+      <button className={'ec-play' + (playing ? ' on' : '')} onClick={toggle} aria-label="Play sample call">
+        {playing ? '❚❚' : '►'}
+      </button>
+      <div className="ec-call-body">
+        <div className="ec-call-top">
+          <span className="ec-call-title" title={call.title} onClick={() => setOpen(o => !o)}>{call.title}</span>
+          <span className="ec-call-dur">{fmtDur(call.duration)}</span>
+        </div>
+        <div className="ec-wave">
+          {bars.map((h, i) => (
+            <span key={i} style={{
+              height: (h * 100) + '%',
+              background: i / bars.length <= prog ? 'var(--c-accent)' : 'currentColor',
+              opacity:    i / bars.length <= prog ? 1 : .3
+            }} />
+          ))}
+        </div>
+        <div className="ec-call-meta">
+          <span className="ec-sent" style={{ color: sentColor }}>● {call.sentiment}</span>
+          <span className="ec-call-links">
+            {!isReal && <span className="ec-demo">demo</span>}
+            <a className="ec-trellus-link" href={trellusHref} target="_blank" rel="noopener"
+               onClick={(e) => e.stopPropagation()}
+               title={isReal ? 'Open transcript in Trellus' : 'Opens Trellus once API is connected'}>
+              Trellus ↗
+            </a>
+          </span>
+        </div>
+        {open && call.transcript && <div className="ec-transcript">"{call.transcript}"</div>}
+      </div>
+    </div>
+  );
 }
 
-/* Chrome / holo — dark premium */
-.ec-card[data-variant="chrome"] {
-  --c-bg: #0e1626; --c-ink: #e8eefc; --c-frame: #34507f; --c-band: #1b2c4d;
-}
-.ec-card[data-variant="chrome"] .ec-face {
-  background: linear-gradient(160deg, #15233d, #0a1120 70%);
-}
-.ec-card[data-variant="chrome"] .ec-flavor { color: #c2d2f0; }
-.ec-card[data-variant="chrome"] .ec-season,
-.ec-card[data-variant="chrome"] .ec-footer { border-color: rgba(255,255,255,.14); }
-.ec-card[data-variant="chrome"] .ec-bar-track { background: rgba(255,255,255,.12); }
-.ec-card[data-variant="chrome"] .ec-section-t { border-color: rgba(255,255,255,.14); }
-
-/* Retro arcade — high-key blocky */
-.ec-card[data-variant="arcade"] {
-  --c-bg: #fff5e6; --c-ink: #20232e; --c-frame: #20232e; --c-accent: #e0452f; --c-band: #20232e;
-}
-.ec-card[data-variant="arcade"] .ec-face {
-  background: repeating-linear-gradient(135deg, #fff5e6 0 22px, #fdeccf 22px 44px);
-}
-.ec-card[data-variant="arcade"] .ec-inner,
-.ec-card[data-variant="arcade"] .ec-back-inner { border-width: 3px; border-radius: 6px; }
-.ec-card[data-variant="arcade"] .ec-setbadge {
-  background: var(--red); color: #fff; border-radius: 4px;
-}
-.ec-card[data-variant="arcade"] .ec-namebar,
-.ec-card[data-variant="arcade"] .ec-stat,
-.ec-card[data-variant="arcade"] .ec-name { border-radius: 4px; }
-
-/* =============================================================================
-   TIERS — accent + frame + foil per rarity (override variant accents)
-   ============================================================================= */
-.ec-card[data-tier="rookie"]   { --c-accent: #8a929e; }
-.ec-card[data-tier="starter"]  { --c-accent: #b07b3e; --foil-strength: 0; }
-.ec-card[data-tier="allstar"]  { --c-accent: #9aa6b8;
-  --c-foil: linear-gradient(125deg, transparent 30%, rgba(220,230,245,.5) 50%, transparent 70%);
-  --foil-strength: .55; }
-.ec-card[data-tier="mvp"] {
-  --c-accent: var(--gold);
-  --c-foil: linear-gradient(125deg, transparent 25%, rgba(255,225,140,.65) 48%, rgba(255,255,255,.4) 54%, transparent 75%);
-  --foil-strength: .8;
-}
-.ec-card[data-tier="hof"] {
-  --c-accent: var(--gold-lt);
-  --c-foil: linear-gradient(120deg,
-     rgba(255,80,120,.5), rgba(255,210,90,.5), rgba(120,255,170,.5),
-     rgba(90,200,255,.5), rgba(190,120,255,.5));
-  --foil-strength: .85;
-}
-.ec-card[data-tier="hof"] .ec-face,
-.ec-card[data-tier="mvp"] .ec-face { border-color: var(--c-accent); }
-
-/* animated sheen sweep for foil cards */
-.ec-card[data-foil="true"] .ec-foil { animation: ec-sheen 5.5s ease-in-out infinite; background-size: 250% 250%; }
-@keyframes ec-sheen {
-  0%, 100% { background-position: 0% 0%; }
-  50% { background-position: 100% 100%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ec-card[data-foil="true"] .ec-foil { animation: none; }
+// ── Stars ─────────────────────────────────────────────────────────────────────
+function Stars({ n }) {
+  return (
+    <div className="ec-stars">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className={i <= n ? '' : 'ec-star-empty'}>★</span>
+      ))}
+    </div>
+  );
 }
 
-/* rarity ribbon corner */
-.ec-rarity-ribbon {
-  position: absolute; top: 9px; left: -34px; transform: rotate(-45deg);
-  background: var(--c-accent); color: #10182a; font-family:'Anton',sans-serif;
-  font-size: 9px; letter-spacing: 1px; padding: 3px 36px; z-index: 3;
-  box-shadow: 0 1px 3px rgba(0,0,0,.4); text-transform: uppercase;
-  opacity: 0; transition: opacity .2s;
-}
-.ec-card[data-tier="mvp"] .ec-rarity-ribbon,
-.ec-card[data-tier="hof"] .ec-rarity-ribbon { opacity: 1; }
-
-/* =============================================================================
-   STATIC / BASE-SET CARDS  (Skill / Human / Field / Item — flat, no back)
-   ============================================================================= */
-.sc-card {
-  position: relative; width: 320px; aspect-ratio: 320 / 446; border-radius: 16px;
-  font-family: 'Oswald', sans-serif; color: #e8eefc; user-select: none; overflow: hidden;
-  background: linear-gradient(165deg, var(--sc-tint), #0a1120 78%);
-  border: 1px solid rgba(255,255,255,.12);
-  box-shadow: 0 18px 40px -12px rgba(5,12,28,.65);
-}
-.sc-foil { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
-  background-size: 250% 250%; border-radius: 16px; }
-.sc-card[data-foil="true"][data-rarity="SR"] .sc-foil { opacity: .8;
-  background: linear-gradient(125deg, transparent 25%, rgba(255,225,140,.55) 48%, rgba(255,255,255,.35) 54%, transparent 75%);
-  animation: ec-sheen 5.5s ease-in-out infinite; }
-.sc-card[data-foil="true"][data-rarity="UR"] .sc-foil { opacity: .85;
-  background: linear-gradient(120deg, rgba(255,80,120,.5), rgba(255,210,90,.5), rgba(120,255,170,.5), rgba(90,200,255,.5), rgba(190,120,255,.5));
-  animation: ec-sheen 5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .sc-foil { animation: none !important; } }
-
-.sc-inner { position: absolute; inset: 9px; border: 2px solid var(--sc-accent);
-  border-radius: 11px; padding: 11px 12px; display: flex; flex-direction: column;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10)); }
-.sc-top { display: flex; align-items: center; gap: 8px; }
-.sc-title { flex: 1; font-family: 'Anton', sans-serif; font-size: 21px; line-height: 1;
-  text-transform: uppercase; letter-spacing: .3px; text-wrap: balance; }
-.sc-rargem { flex: 0 0 auto; font-family: 'Anton', sans-serif; font-size: 13px; color: #10182a;
-  background: var(--sc-rarcol); border-radius: 6px; padding: 4px 8px;
-  box-shadow: 0 0 10px -1px var(--sc-rarcol); }
-.sc-typebar { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-  font-size: 11px; letter-spacing: 2px; text-transform: uppercase; font-weight: 600; color: #0a1120;
-  background: var(--sc-accent); padding: 3px 12px; border-radius: 5px; }
-.sc-glyph { font-size: 12px; }
-.sc-art { position: relative; margin-top: 9px; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden;
-  border: 1.5px solid var(--sc-accent);
-  background: radial-gradient(120% 120% at 50% 10%, rgba(255,255,255,.10), transparent 60%),
-    linear-gradient(160deg, color-mix(in srgb, var(--sc-accent) 30%, #0a1120), #0a1120); }
-.sc-halftone { position: absolute; inset: 0; opacity: .4;
-  background-image: radial-gradient(rgba(255,255,255,.18) 1.3px, transparent 1.4px); background-size: 9px 9px; }
-.sc-bigglyph { position: absolute; inset: 0; display: grid; place-items: center;
-  font-size: 86px; color: var(--sc-accent); opacity: .9; text-shadow: 0 4px 18px rgba(0,0,0,.5); }
-.sc-monogram { position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: 'Anton', sans-serif; font-size: 64px; color: #fff; text-shadow: 0 4px 14px rgba(0,0,0,.5); }
-.sc-trigger { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; line-height: 1.3;
-  font-style: italic; padding: 6px 9px; color: #dbe5fb; background: linear-gradient(0deg, rgba(0,0,0,.78), transparent); }
-.sc-action { margin-top: 9px; font-family: 'Anton', sans-serif; font-size: 16px; text-transform: uppercase;
-  letter-spacing: .5px; color: var(--sc-accent); display: flex; align-items: baseline; gap: 8px; }
-.sc-action-lbl { font-family: 'Oswald', sans-serif; font-size: 9px; letter-spacing: 2px; color: #8fa0c2;
-  border: 1px solid rgba(255,255,255,.2); border-radius: 4px; padding: 1px 5px; }
-.sc-rules { margin-top: 7px; font-size: 11.5px; line-height: 1.4; color: #cdd9f5;
-  background: rgba(0,0,0,.25); border-left: 2px solid var(--sc-accent); border-radius: 4px; padding: 7px 9px; }
-.sc-flavor { margin-top: auto; padding-top: 8px; font-family: 'Roboto Slab', Georgia, serif; font-style: italic;
-  font-size: 11px; line-height: 1.35; color: #aebcdc; text-wrap: pretty; }
-.sc-footer { margin-top: 8px; display: flex; justify-content: space-between; align-items: center;
-  border-top: 1px solid rgba(255,255,255,.12); padding-top: 7px; }
-.sc-set { font-size: 10px; letter-spacing: .5px; text-transform: uppercase; color: #8fa0c2; }
-.sc-no { font-size: 10px; opacity: .6; }
-
-/* =============================================================================
-   HAIL911 CARD VARIANT — deep crimson, distinct from Elite Call navy / gold
-   ============================================================================= */
-.ec-card[data-company="hail911"][data-variant="chrome"] {
-  --c-bg:    #1a0c0c;
-  --c-ink:   #f5e8e8;
-  --c-frame: #7a2626;
-  --c-band:  #4a1212;
-  --c-accent: #e04040;
-}
-.ec-card[data-company="hail911"][data-variant="chrome"] .ec-face {
-  background: linear-gradient(160deg, #2a0e0e, #0e0707 70%);
-}
-.ec-card[data-company="hail911"][data-variant="chrome"] .ec-setbadge {
-  background: linear-gradient(180deg, #e86060, #b02020);
-  color: #fff; border-color: rgba(0,0,0,.4);
-}
-.ec-card[data-company="hail911"] .ec-logo-dot {
-  background: radial-gradient(circle at 35% 30%, #fff, #7a1a1a 65%);
-  box-shadow: 0 0 0 1.5px #e04040;
-}
-.ec-card[data-company="hail911"] .ec-bar-fill { background: #c42a2a; }
-.ec-card[data-company="hail911"] .ec-spark span { background: #c42a2a; }
-.ec-card[data-company="hail911"] .ec-play { background: #4a1010; }
-.ec-card[data-company="hail911"] .ec-play.on { background: #e04040; color: #fff; }
-
-/* =============================================================================
-   MOUSE-REACTIVE FOIL  —  JS sets --mx / --my on mousemove; CSS follows cursor
-   When mouse is over the card, the static animation pauses and the radial
-   gradient tracks the pointer for a real holographic feel.
-   ============================================================================= */
-.ec-card[data-foil="true"][data-mouse-active="true"] .ec-foil { animation: none; }
-
-.ec-card[data-tier="hof"][data-mouse-active="true"] .ec-foil {
-  background: radial-gradient(
-    ellipse 90% 70% at calc(var(--mx,.5) * 100%) calc(var(--my,.5) * 100%),
-    rgba(255,80,120,.65), rgba(255,210,90,.55), rgba(120,255,170,.5),
-    rgba(90,200,255,.45), rgba(190,120,255,.55), transparent 72%);
-  opacity: .92;
-}
-.ec-card[data-tier="mvp"][data-mouse-active="true"] .ec-foil {
-  background: radial-gradient(
-    ellipse 80% 60% at calc(var(--mx,.5) * 100%) calc(var(--my,.5) * 100%),
-    rgba(255,240,150,.80), rgba(255,195,60,.52), transparent 65%);
-  opacity: .88;
-}
-.ec-card[data-tier="allstar"][data-mouse-active="true"] .ec-foil {
-  background: radial-gradient(
-    ellipse 80% 60% at calc(var(--mx,.5) * 100%) calc(var(--my,.5) * 100%),
-    rgba(220,235,255,.62), rgba(180,200,230,.42), transparent 65%);
-  opacity: .72;
+// ── Portrait ──────────────────────────────────────────────────────────────────
+// Handles suffixes like "IV" so William Kerth IV → WKIV
+function computeInitials(first, last) {
+  const f      = (first || '')[0] || '';
+  const words  = (last  || '').split(/\s+/);
+  const l      = (words[0] || '')[0] || '';
+  const suffix = words.slice(1).filter(w => /^[IVX]+$/i.test(w)).join('');
+  return (f + l + suffix).toUpperCase();
 }
 
-/* =============================================================================
-   TREND TOGGLE  —  Leads / ACC switcher on card back
-   ============================================================================= */
-.ec-trend-toggle {
-  display: flex;
-  background: rgba(0,0,0,.28);
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.16);
-  overflow: hidden;
-}
-.ec-tt-btn {
-  font-family: 'Oswald', sans-serif;
-  font-size: 9px; font-weight: 600; letter-spacing: 1px;
-  text-transform: uppercase; padding: 3px 10px;
-  background: transparent; border: none;
-  color: rgba(255,255,255,.45); cursor: pointer;
-  transition: background .15s, color .15s;
-}
-.ec-tt-btn[data-on="true"] { background: var(--c-accent); color: #0a1120; }
-.ec-tt-btn:not([data-on="true"]):hover { color: rgba(255,255,255,.82); }
-.ec-trend-label { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; opacity: .5; align-self: center; }
-
-/* =============================================================================
-   GRADE BADGE — PSA-inspired quality score, overlaid on card portrait corner
-   ============================================================================= */
-.ec-grade {
-  position: absolute; bottom: 8px; right: 8px; z-index: 4;
-  background: rgba(8,14,30,.88); backdrop-filter: blur(4px);
-  border: 2px solid var(--grade-c, var(--c-accent));
-  border-radius: 7px; padding: 3px 8px; text-align: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,.6);
-}
-.ec-grade[data-grade-level="gem"]  { --grade-c: #f3cf6b; }
-.ec-grade[data-grade-level="mint"] { --grade-c: #c0cfe0; }
-.ec-grade[data-grade-level="fine"] { --grade-c: #b07b3e; }
-.ec-grade[data-grade-level="good"] { --grade-c: #8a929e; }
-.ec-grade-num {
-  font-family: 'Anton', sans-serif; font-size: 20px; line-height: 1;
-  color: var(--grade-c, var(--c-accent));
-}
-.ec-grade-lbl {
-  font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--grade-c, var(--c-accent)); opacity: .8;
+function Portrait({ agent }) {
+  const initials = computeInitials(agent.first, agent.last);
+  const isHail   = agent.company === 'hail911';
+  return (
+    <div className="ec-portrait">
+      {agent.photo
+        ? <img src={agent.photo} alt={agent.nameFirstLast} />
+        : <React.Fragment>
+            <div className="ec-halftone" />
+            <div className="ec-monogram">{initials.toUpperCase()}</div>
+          </React.Fragment>
+      }
+      {isHail && (
+        <span className="ec-cobadge" title="Hail911">
+          <img src={(window.__resources && window.__resources.hail911) || 'hail911-logo.jpg'} alt="Hail911" />
+        </span>
+      )}
+      <span className="ec-teamtag">{agent.team}</span>
+      {agent.grade != null && (
+        <div className="ec-grade" data-grade-level={agent.grade >= 9 ? 'gem' : agent.grade >= 7 ? 'mint' : agent.grade >= 5 ? 'fine' : 'good'}>
+          <div className="ec-grade-num">{agent.grade}</div>
+          <div className="ec-grade-lbl">Grade</div>
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* Grade on card back header */
-.ec-back-grade {
-  font-family: 'Anton', sans-serif; font-size: 28px;
-  color: var(--c-accent); line-height: 1; text-align: right;
+// ── TrendChart (toggle LPH vs ACC) ────────────────────────────────────────────
+function TrendChart({ trendLph, trendAcc }) {
+  const hasLph  = trendLph && trendLph.some(v => v > 0);
+  const hasAcc  = trendAcc && trendAcc.some(v => v > 0);
+  const [mode, setMode] = React.useState(hasAcc ? 'acc' : 'lph');
+  if (!hasLph && !hasAcc) return null;
+
+  const data    = mode === 'acc' ? (trendAcc || []) : (trendLph || []);
+  const nonZero = data.filter(v => v > 0);
+  const tMax    = nonZero.length ? Math.max(...nonZero) : 1;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        <div className="ec-section-t" style={{ margin: 0, border: 'none', paddingBottom: 0 }}>
+          8-Week Trend
+        </div>
+        {hasLph && hasAcc
+          ? <div className="ec-trend-toggle">
+              <button className="ec-tt-btn" data-on={mode === 'lph'} onClick={(e) => { e.stopPropagation(); setMode('lph'); }}>Leads</button>
+              <button className="ec-tt-btn" data-on={mode === 'acc'} onClick={(e) => { e.stopPropagation(); setMode('acc'); }}>ACC %</button>
+            </div>
+          : <span className="ec-trend-label">{hasAcc ? 'ACC %' : 'Leads'}</span>
+        }
+      </div>
+      <div className="ec-spark" style={{ marginTop: 6 }}>
+        {data.map((v, i) => (
+          <span key={i} style={{ height: Math.max(4, ((v || 0) / tMax) * 100) + '%' }} />
+        ))}
+      </div>
+    </div>
+  );
 }
-.ec-back-grade[data-grade-level="gem"]  { color: var(--gold-lt); }
-.ec-back-grade[data-grade-level="mint"] { color: #c0cfe0; }
-.ec-back-grade[data-grade-level="fine"] { color: #b07b3e; }
-.ec-back-grade[data-grade-level="good"] { color: #8a929e; }
-.ec-back-grade small { display: block; font-size: 9px; letter-spacing: 1px; opacity: .6; color: var(--c-ink); }
+
+// ── Card front ────────────────────────────────────────────────────────────────
+function CardFront({ agent, tier, variant, setName }) {
+  const stats = ECStats();
+  return (
+    <div className="ec-face ec-face--front">
+      <div className="ec-foil" />
+      <div className="ec-rarity-ribbon">{tier.name}</div>
+      <div className="ec-inner">
+        <div className="ec-top">
+          <Stars n={tier.stars} />
+          <span className="ec-setbadge">{agent.company === 'hail911' ? 'Hail911' : setName}</span>
+          <span className="ec-cardno">#{String(agent.cardNo).padStart(3, '0')} / {String(window.EliteData.ROSTER.length).padStart(3, '0')}</span>
+        </div>
+        <Portrait agent={agent} />
+        <div className="ec-namebar"><div className="ec-name">{agent.nameFirstLast}</div></div>
+        <div className="ec-stats">
+          {stats.filter(s => s.front !== false).map((s) => {
+            const f = formatStat(s, agent.stats[s.key]);
+            return (
+              <div className="ec-stat" key={s.key}>
+                <div className="ec-stat-val">{f.val}<small>{f.unit}</small></div>
+                <div className="ec-stat-lbl">{s.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        {agent.flavor && <div className="ec-flavor">"{agent.flavor}"</div>}
+        <div className="ec-footer">
+          <div className="ec-logo"><span className="ec-logo-dot" />Elite Call</div>
+          <span className="ec-season">{agent.periodLabel}{agent.archived ? ' · Archived' : ''}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Card back ─────────────────────────────────────────────────────────────────
+function CardBack({ agent, tier }) {
+  const stats = ECStats();
+  const D     = window.EliteData;
+
+  return (
+    <div className="ec-face ec-face--back">
+      <div className="ec-foil" />
+      <div className="ec-back-inner">
+        <div className="ec-back-head">
+          <div>
+            <div className="ec-back-name">{agent.nameFirstLast}</div>
+            <div style={{ fontSize: 11, opacity: .65, letterSpacing: '.5px', textTransform: 'uppercase' }}>
+              {tier.name} · {agent.team}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+            {agent.grade != null && (
+              <div className="ec-back-grade" data-grade-level={agent.grade >= 9 ? 'gem' : agent.grade >= 7 ? 'mint' : agent.grade >= 5 ? 'fine' : 'good'}>
+                {agent.grade}<small>Grade</small>
+              </div>
+            )}
+            <div className="ec-back-ovr">{agent.composite}<small>OVR</small></div>
+          </div>
+        </div>
+
+        <div className="ec-section-t">Stat Breakdown</div>
+        {stats.map((s) => {
+          const raw   = agent.stats[s.key];
+          const isNull = raw == null || (typeof raw === 'number' && isNaN(raw));
+          const score  = isNull ? 0 : D.scoreStat(s, raw);
+          const f      = formatStat(s, raw);
+          return (
+            <div className="ec-bar-row" key={s.key}>
+              <span className="ec-bar-lbl">{s.label}</span>
+              <span className="ec-bar-track">
+                {!isNull && <span className="ec-bar-fill" style={{ width: score + '%' }} />}
+              </span>
+              <span className="ec-bar-num">{f.val}{f.unit}</span>
+            </div>
+          );
+        })}
+
+        <TrendChart trendLph={agent.trendLph} trendAcc={agent.trendAcc} />
+
+        {agent.calls && agent.calls.length > 0 && (
+          <React.Fragment>
+            <div className="ec-section-t">Sample Calls <span style={{ opacity: .55, fontWeight: 400, letterSpacing: '.5px' }}>· via Trellus</span></div>
+            {agent.calls.slice(0, 3).map((c, i) => <CallPlayer key={i} call={c} />)}
+          </React.Fragment>
+        )}
+
+        {agent.strengths && agent.strengths.length > 0 && (
+          <React.Fragment>
+            <div className="ec-section-t">Strengths</div>
+            {agent.strengths.map((s, i) => (
+              <div className="ec-sg" key={i}><span className="ec-sg-mark">▲</span><span>{s}</span></div>
+            ))}
+          </React.Fragment>
+        )}
+
+        {agent.growth && agent.growth.length > 0 && (
+          <React.Fragment>
+            <div className="ec-section-t">Growth Areas</div>
+            {agent.growth.map((s, i) => (
+              <div className="ec-sg" key={i}><span className="ec-sg-mark" style={{ color: 'var(--red)' }}>▼</span><span>{s}</span></div>
+            ))}
+          </React.Fragment>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── TradingCard ───────────────────────────────────────────────────────────────
+function TradingCard({ agent, variant = 'vintage', setName = 'Elite Call', flippable = true, flipped: controlledFlipped, onFlip, style }) {
+  const [internalFlip, setInternalFlip] = React.useState(false);
+  const flipped = controlledFlipped !== undefined ? controlledFlipped : internalFlip;
+  const cardRef = React.useRef(null);
+  const tier    = ECTiers().find((t) => t.key === agent.tier) || ECTiers()[0];
+  const isFoil  = tier.key === 'mvp' || tier.key === 'hof' || tier.key === 'allstar';
+
+  const toggle = () => {
+    if (!flippable) return;
+    if (onFlip) onFlip(!flipped); else setInternalFlip(f => !f);
+  };
+
+  // Mouse-reactive foil: track cursor position on the card
+  const onMouseMove = (e) => {
+    const el = cardRef.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', ((e.clientX - r.left) / r.width).toFixed(3));
+    el.style.setProperty('--my', ((e.clientY - r.top)  / r.height).toFixed(3));
+    el.setAttribute('data-mouse-active', 'true');
+  };
+  const onMouseLeave = () => {
+    const el = cardRef.current; if (!el) return;
+    el.style.removeProperty('--mx');
+    el.style.removeProperty('--my');
+    el.removeAttribute('data-mouse-active');
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      className="ec-card"
+      data-variant={variant}
+      data-tier={tier.key}
+      data-foil={isFoil}
+      data-company={agent.company || ''}
+      data-flipped={flipped}
+      style={{ cursor: flippable ? 'pointer' : 'default', ...style }}
+      onClick={toggle}
+      onMouseMove={isFoil ? onMouseMove : undefined}
+      onMouseLeave={isFoil ? onMouseLeave : undefined}
+      title={flippable ? 'Click to flip' : undefined}
+    >
+      <div className="ec-flip">
+        <CardFront agent={agent} tier={tier} variant={variant} setName={setName} />
+        <CardBack  agent={agent} tier={tier} />
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { TradingCard, Stars });
+
+/* ── StaticCard (Base Set) ── */
+function StaticCard({ card, variant = 'chrome', style }) {
+  const meta = window.EliteBaseSet.TYPE_META[card.type] || window.EliteBaseSet.TYPE_META.Skill;
+  const rar  = window.EliteBaseSet.RARITY[card.rarity];
+  const isHuman  = card.type === 'Human';
+  const initials = isHuman ? card.title.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : null;
+  return (
+    <div className="sc-card" data-variant={variant} data-type={card.type} data-rarity={card.rarity}
+      data-foil={rar.foil} style={{ '--sc-accent': meta.accent, '--sc-tint': meta.tint, '--sc-rarcol': rar.color, ...style }}>
+      <div className="sc-foil" />
+      <div className="sc-inner">
+        <div className="sc-top">
+          <div className="sc-title" title={card.title}>{card.title}</div>
+          <div className="sc-rargem" title={rar.name}>{card.rarity}</div>
+        </div>
+        <div className="sc-typebar"><span className="sc-glyph">{meta.glyph}</span>{card.type}</div>
+        <div className="sc-art">
+          <div className="sc-halftone" />
+          {isHuman ? <div className="sc-monogram">{initials}</div> : <div className="sc-bigglyph">{meta.glyph}</div>}
+          {card.description && <div className="sc-trigger">{card.description}</div>}
+        </div>
+        <div className="sc-action"><span className="sc-action-lbl">Action</span>{card.action}</div>
+        <div className="sc-rules">{card.behavior}</div>
+        {card.flavor && <div className="sc-flavor">"{card.flavor}"</div>}
+        <div className="sc-footer">
+          <span className="sc-set">Base Set · {rar.name}</span>
+          <span className="sc-no">#{String(card.cardNo).padStart(3, '0')} / {String(window.EliteBaseSet.BASE_SET.length).padStart(3, '0')}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnyCard(props) {
+  const c = props.agent || props.card;
+  if (c && c.kind === 'static') return <StaticCard card={c} variant={props.variant} style={props.style} />;
+  return <TradingCard {...props} />;
+}
+
+Object.assign(window, { StaticCard, AnyCard });

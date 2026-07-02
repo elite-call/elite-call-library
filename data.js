@@ -1,418 +1,487 @@
-/* TradingCard component — shared by gallery + pack pages.
-   Exposes: window.TradingCard, window.formatStat, window.Stars */
+/* =============================================================================
+   ELITE CALL — TRADING CARDS · DATA LAYER  v2
+   -----------------------------------------------------------------------------
+   Two data paths:
+     LIVE  → window.AGENT_FEED_CSV is set by app/agent_feed_data.js
+             buildRosterFromAgentFeed() parses it into the card shape.
+     DEMO  → falls back to deterministic sample data using the original stat keys.
+   ============================================================================= */
 
-const ECTiers = () => window.EliteData.TIERS;
-const ECStats = () => window.EliteData.STATS;
+(function () {
+  'use strict';
 
-// Format a stat for display. Handles null → "—", seconds, floats, etc.
-function formatStat(stat, raw) {
-  if (raw == null || (typeof raw === 'number' && isNaN(raw))) {
-    return { val: '—', unit: '' };
+  // ── Stat catalog (6 tiles on card front) ─────────────────────────────────────
+  // isSec: value is seconds, display as "Xs" or "M:SS"
+  // front:true  → shown as tile on card front
+  // front:false → shown on card back bars only
+  const STATS = [
+    { key: 'lph',              label: 'Leads/Hr',   unit: '',  max: 3.0,  better: 'high',            front: true  },
+    { key: 'dials',            label: 'Dials',       unit: '',  max: 3000, better: 'high',            front: true  },
+    { key: 'percentScheduled', label: 'Sched %',     unit: '%', max: 110,  better: 'high',            front: true  },
+    { key: 'acc',              label: 'ACC',         unit: '%', max: 100,  better: 'high',            front: true  },
+    { key: 'closeRate',        label: 'Close Rate',  unit: '%', max: 50,   better: 'high',            front: true  },
+    { key: 'goldRate',         label: 'Gold Rate',   unit: '%', max: 5,    better: 'high',            front: true  },
+    { key: 'avgTalk',          label: 'Avg Talk',    unit: '',  max: 90,   better: 'high', isSec: true, front: false },
+  ];
+
+  // ── Tiers (rarity ladder) ────────────────────────────────────────────────────
+  const TIERS = [
+    { key: 'rookie',  name: 'Rookie',       stars: 1, min: 0,  short: 'RC'  },
+    { key: 'starter', name: 'Starter',      stars: 2, min: 40, short: 'ST'  },
+    { key: 'allstar', name: 'Role Player', stars: 3, min: 58, short: 'RP'  },
+    { key: 'mvp',     name: 'MVP',          stars: 4, min: 72, short: 'MVP' },
+    { key: 'hof',     name: 'Elite',       stars: 5, min: 85, short: 'ELT' },
+  ];
+
+  function tierFor(composite) {
+    let t = TIERS[0];
+    for (const tier of TIERS) if (composite >= tier.min) t = tier;
+    return t;
   }
-  if (stat.isSec) {
-    const s = Math.round(Number(raw));
-    if (s >= 60) return { val: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`, unit: '' };
-    return { val: s, unit: 's' };
+
+  // ── Scoring ──────────────────────────────────────────────────────────────────
+  function scoreStat(stat, raw) {
+    if (raw == null || (typeof raw === 'number' && isNaN(raw))) return 0;
+    return Math.max(0, Math.min(100, Math.round((Number(raw) / stat.max) * 100)));
   }
-  if (stat.key === 'lph')  return { val: Number(raw).toFixed(1), unit: '' };
-  if (stat.key === 'dials') {
-    const n = Math.round(Number(raw));
-    return { val: n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n), unit: '' };
-  }
-  if (stat.unit === '%') return { val: parseFloat(raw).toFixed(1), unit: '%' };
-  return { val: Math.round(Number(raw)), unit: stat.unit };
-}
-window.formatStat = formatStat;
 
-function fmtDur(sec) {
-  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
+  // Elite Call weights (all 6 stats)
+  const WEIGHTS      = { lph: 0.27, closeRate: 0.20, acc: 0.20, percentScheduled: 0.13, goldRate: 0.07, dials: 0.05, avgTalk: 0.08 };
+  const WEIGHTS_H911 = { lph: 0.38, closeRate: 0.26, percentScheduled: 0.18, avgTalk: 0.10, dials: 0.08 };
 
-// Shared WebAudio context for demo playback
-let _ecAudioCtx = null;
-function demoTone() {
-  try {
-    _ecAudioCtx = _ecAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const ctx  = _ecAudioCtx;
-    const osc  = ctx.createOscillator(), gain = ctx.createGain();
-    const lfo  = ctx.createOscillator(), lfoG = ctx.createGain();
-    osc.type = 'sine'; osc.frequency.value = 220;
-    lfo.type = 'sine'; lfo.frequency.value = 3.5; lfoG.gain.value = 40;
-    lfo.connect(lfoG); lfoG.connect(osc.frequency);
-    gain.gain.value = 0.04;
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.start(); lfo.start();
-    return () => { try { osc.stop(); lfo.stop(); } catch (e) {} };
-  } catch (e) { return () => {}; }
-}
-
-// ── CallPlayer ────────────────────────────────────────────────────────────────
-function CallPlayer({ call }) {
-  const [playing, setPlaying] = React.useState(false);
-  const [prog,    setProg]    = React.useState(0);
-  const [open,    setOpen]    = React.useState(false);
-  const raf      = React.useRef(null);
-  const stopTone = React.useRef(null);
-  const audioRef = React.useRef(null);
-  const liveSrc  = window.Trellus ? window.Trellus.recordingUrl(call) : (call.src || null);
-
-  const stop = () => {
-    setPlaying(false);
-    if (raf.current) cancelAnimationFrame(raf.current);
-    if (stopTone.current) { stopTone.current(); stopTone.current = null; }
-    if (audioRef.current) audioRef.current.pause();
-  };
-
-  const toggle = (e) => {
-    e.stopPropagation();
-    if (playing) { stop(); return; }
-    setPlaying(true);
-    if (liveSrc && audioRef.current) {
-      audioRef.current.currentTime = prog * (audioRef.current.duration || 0) || 0;
-      audioRef.current.play().catch(() => {});
-      return;
+  function composite(statsObj, isHail) {
+    const w = isHail ? WEIGHTS_H911 : WEIGHTS;
+    let sum = 0, wsum = 0;
+    for (const s of STATS) {
+      const wt = w[s.key]; if (!wt) continue;
+      const raw = statsObj[s.key];
+      if (raw == null || (typeof raw === 'number' && isNaN(raw))) continue;
+      sum  += scoreStat(s, raw) * wt;
+      wsum += wt;
     }
-    stopTone.current = demoTone();
-    const dur = 6000; const start = performance.now() - prog * dur;
-    const step = (t) => {
-      const p = Math.min(1, (t - start) / dur);
-      setProg(p);
-      if (p >= 1) { stop(); setProg(0); }
-      else raf.current = requestAnimationFrame(step);
+    return wsum > 0 ? Math.round(sum / wsum) : 0;
+  }
+
+  // ── Deterministic PRNG ───────────────────────────────────────────────────────
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
-    raf.current = requestAnimationFrame(step);
+  }
+  function hashString(s) {
+    let h = 0x9e3779b9;
+    for (let i = 0; i < s.length; i++) h = (Math.imul(h ^ s.charCodeAt(i), 0x9e3779b9) | 0);
+    return (h >>> 0);
+  }
+
+  // ── Grade (1-10): PSA-inspired quality score, LPH + ACC primary ──────────────
+  // Elite Call: 60% LPH + 40% ACC
+  // Hail911:    50% LPH (scaled to their range) + 50% Sched%
+  function computeGrade(stats, isHail) {
+    const lphScore  = Math.min(100, ((stats.lph || 0) / 3.0) * 100);
+    const accScore  = (stats.acc != null && !isNaN(stats.acc)) ? stats.acc : null;
+    const schedScore = (stats.percentScheduled != null && !isNaN(stats.percentScheduled))
+      ? Math.min(100, stats.percentScheduled) : null;
+
+    let blended;
+    if (!isHail && accScore != null) {
+      blended = lphScore * 0.60 + accScore * 0.40;
+    } else if (isHail && schedScore != null) {
+      const hailLph = Math.min(100, ((stats.lph || 0) / 0.75) * 100);
+      blended = hailLph * 0.50 + schedScore * 0.50;
+    } else {
+      blended = lphScore;
+    }
+    return Math.max(1, Math.min(10, Math.round(1 + (blended / 100) * 9)));
+  }
+
+  // ── THE MAGIC: performance-weighted probabilistic tier roll ──────────────────
+  // Better composite → dramatically better odds at rarer tiers.
+  // Seeded by agent_id + periodKey so the same card always shows the same tier on reload.
+  // Everyone has at least a tiny chance at any tier — that's the fun.
+  function weightedTierRoll(comp, agentId, periodKey) {
+    const seed = hashString((agentId || '') + (periodKey || ''));
+    const rand = mulberry32(seed);
+    const t = Math.max(0, Math.min(1, comp / 100));
+
+    // Raw weights (will be normalised)
+    const raw = [
+      { key: 'hof',     w: 0.1  + Math.pow(t, 3.0) * 12  },
+      { key: 'mvp',     w: 0.5  + Math.pow(t, 2.0) * 25  },
+      { key: 'allstar', w: 5.0  + Math.pow(t, 1.2) * 35  },
+      { key: 'starter', w: 20   + t * 20                  },
+      { key: 'rookie',  w: Math.pow(1 - t, 1.4) * 90 + 2 },
+    ];
+    const total = raw.reduce((s, r) => s + r.w, 0);
+    let r = rand() * total;
+    for (const { key, w } of raw) { r -= w; if (r <= 0) return key; }
+    return 'rookie';
+  }
+
+  // ── Name utilities ───────────────────────────────────────────────────────────
+  function lastFirstToFirstLast(s) {
+    const p = s.split(',');
+    return p.length === 2 ? `${p[1].trim()} ${p[0].trim()}` : s.trim();
+  }
+  function firstLastToLastFirst(s) {
+    const p = s.trim().split(/\s+/);
+    return p.length >= 2 ? `${p[p.length - 1]}, ${p.slice(0, -1).join(' ')}` : s.trim();
+  }
+
+  // ── CSV parser (handles quoted fields + escaped double-quotes) ───────────────
+  function parseCsv(text) {
+    const rows = []; let row = [], field = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') q = false;
+        else field += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    const head = rows.shift().map((h) => h.trim());
+    return rows.filter((r) => r.length > 1).map((r) => {
+      const o = {}; head.forEach((h, idx) => (o[h] = (r[idx] || '').trim())); return o;
+    });
+  }
+
+  // ── Parse helpers ────────────────────────────────────────────────────────────
+  // acc_display: "97%" → 97 | "0.926" → 92.6 | "1" → 100 | "—" → null
+  function parseAccPct(val) {
+    if (!val || val === '—' || val === '') return null;
+    const s = String(val).trim();
+    if (s.endsWith('%')) return parseFloat(s) || null;
+    const f = parseFloat(s);
+    if (isNaN(f)) return null;
+    if (f > 1) return f;           // already percentage (e.g. "96")
+    return Math.round(f * 1000) / 10;  // 0.926 → 92.6
+  }
+
+  // Pipe-separated number string → array of numbers
+  function parsePipe(s) {
+    if (!s) return [];
+    return s.split('|').map(v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; });
+  }
+
+  // sample_calls JSON → call objects for CallPlayer
+  function parseSampleCalls(json, periodLabel) {
+    if (!json || json === '[]') return [];
+    try {
+      const arr = JSON.parse(json);
+      if (!Array.isArray(arr)) return [];
+      return arr.map(c => ({
+        title:       String(c.label || 'Call'),
+        tag:         '',
+        sentiment:   'Positive',
+        duration:    Number(c.dur) || 0,
+        date:        periodLabel || '',
+        transcript:  '',
+        src:         null,
+        trellusLink: c.url || null,
+      }));
+    } catch (e) { return []; }
+  }
+
+  // ── buildRosterFromAgentFeed ─────────────────────────────────────────────────
+  function buildRosterFromAgentFeed(csvString) {
+    const rows = parseCsv(csvString);
+    if (!rows.length) return [];
+
+    const firstRow    = rows[0];
+    const periodKey   = firstRow.week_tag     || 'current';
+    const periodLabel = firstRow.period_label || 'Current Period';
+
+    const agents = rows.map((row, i) => {
+      const isHail = row.company === 'hail911' || row.is_elitecall === 'FALSE';
+
+      const rawName = (row.display_name || '').trim();
+      const parts   = rawName.split(/\s+/);
+      const first   = parts[0] || '';
+      const last    = parts.slice(1).join(' ') || '';
+
+      const accPct  = parseAccPct(row.acc_display);
+      const goldRaw = row.gold_rate !== '' ? parseFloat(row.gold_rate) : NaN;
+      const goldPct = isNaN(goldRaw) ? null : goldRaw * 100;
+
+      const schedRaw = row.percent_scheduled !== '' ? parseFloat(String(row.percent_scheduled).replace('%', '')) : null;
+      const schedPct  = (schedRaw != null && !isNaN(schedRaw)) ? schedRaw : null;
+
+      const stats = {
+        lph:              parseFloat(row.leads_per_hour) || 0,
+        dials:            parseInt(row.di_dialed)        || 0,
+        avgTalk:          parseInt(row.di_avg_talk_sec)  || 0,
+        percentScheduled: schedPct,
+        acc:              accPct,
+        closeRate:        parseFloat(row.di_conv_rate)   || 0,
+        goldRate:         goldPct,
+      };
+
+      const comp  = composite(stats, isHail);
+      const tier  = weightedTierRoll(comp, row.agent_id || String(i), periodKey);
+      const grade = computeGrade(stats, isHail);
+
+      // Trend arrays (8 weeks)
+      const trendLph = parsePipe(row.trend);                               // weekly lead counts
+      const trendAcc = parsePipe(row.trend_acc).map(v => Math.round(v * 100)); // 0–1 → 0–100%
+
+      const calls = parseSampleCalls(row.sample_calls, periodLabel);
+
+      const strengths = [], growth = [];
+      if (row.qa_latest_praise    && row.qa_latest_praise.length    > 10) strengths.push(row.qa_latest_praise.slice(0, 240));
+      if (row.qa_latest_coaching  && row.qa_latest_coaching.length  > 10) growth.push(row.qa_latest_coaching.slice(0, 240));
+
+      return {
+        id:           row.agent_id || `A${String(i + 1).padStart(3, '0')}`,
+        cardNo:       i + 1,     // re-assigned after sort
+        first,
+        last,
+        nameFirstLast: rawName,
+        nameLastFirst: last ? `${last}, ${first}` : first,
+        team:          row.team    || '',
+        company:       row.company || '',
+        isEliteCall:   row.is_elitecall === 'TRUE',
+        periodKey,
+        periodLabel,
+        archived:      false,
+        photo:         null,
+        stats,
+        composite:     comp,
+        tier,
+        flavor:        '',
+        strengths,
+        growth,
+        grade,
+        trend:         trendLph,
+        trendLph,
+        trendAcc,
+        calls,
+      };
+    });
+
+    // Sort highest composite first → card #001 is the top performer
+    agents.sort((a, b) => b.composite - a.composite);
+    agents.forEach((a, i) => (a.cardNo = i + 1));
+    return agents;
+  }
+
+  // ============================================================================
+  //  DEMO FALLBACK (no AGENT_FEED_CSV)
+  // ============================================================================
+  const DEMO_PERIODS = [
+    { key: '2026-04', label: 'April 2026', short: 'APR' },
+    { key: '2026-05', label: 'May 2026',   short: 'MAY' },
+    { key: '2026-06', label: 'June 2026',  short: 'JUN' },
+  ];
+
+  const FIRST = ['Jordan','Marcus','Priya','Devin','Sofia','Tyrell','Hannah','Andre','Mei','Caleb',
+    'Rosa','Liam','Aisha','Noah','Yuki','Gabriel','Imani','Diego','Nora','Sean',
+    'Tasha','Owen','Lena','Malik','Carmen','Reid','Bianca','Theo','Joon','Vera','Hector','Dana'];
+  const LAST  = ['Mitchell','Reyes','Patel','Brooks','Romano','Jackson','Cole','Whitfield','Tanaka','Nguyen',
+    'Delgado','Fitzgerald','Karim','Sanders','Mori','Santos','Washington','Ferraro','Hale','Donnelly',
+    'Greene','Sullivan','Petrov','Abara','Vega','Calloway','Russo','Mercer','Park','Ellison','Cruz','Lindqvist'];
+  const TEAMS = ['Florida', 'Illinois', 'Vanguard', 'Apex'];
+  const STRENGTHS = [
+    'Turns cold opens into warm conversations.',
+    'Relentless on the dial — never lets the queue go quiet.',
+    'Reads hesitation and reframes it as opportunity.',
+    'Masters the callback cadence; follow-through is automatic.',
+    'Builds rapport in the first ten seconds.',
+    'Handles pricing objections without flinching.',
+    'Keeps tone bright on the 80th dial of the day.',
+    'Diagnoses the real need before pitching.',
+  ];
+  const GROWTH = [
+    'Tighten discovery before jumping to the close.',
+    'Push for the next step earlier in the call.',
+    'Vary the opener — the script is getting stale.',
+    'Hold the silence after the ask.',
+  ];
+  const FLAVOR = [
+    'Never takes no for an answer — just finds a better question.',
+    'Dials like the quarter ends tonight.',
+    'The prospect always thinks it was their idea.',
+    'Quietly leads the board most weeks.',
+  ];
+  const CALL_TOPICS = [
+    { title: 'Cold open → booked',       tag: 'Appt Set'   },
+    { title: 'Pricing objection handled', tag: 'Objection'  },
+    { title: 'Callback close',            tag: 'Follow-up'  },
+    { title: 'Membership upsell',         tag: 'Upsell'     },
+  ];
+
+  function makeDemoPeriod(periodIndex, PERIODS) {
+    const rand = mulberry32(20260401 + periodIndex * 7919);
+    const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+    const span = (lo, hi) => lo + rand() * (hi - lo);
+    const out  = [];
+    for (let i = 0; i < 32; i++) {
+      const first = FIRST[i % FIRST.length];
+      const last  = LAST[i % LAST.length];
+      const team  = TEAMS[Math.floor(mulberry32(1000 + i)() * TEAMS.length)];
+      const tilt  = Math.pow(rand(), 1.6);
+      const base  = 0.32 + tilt * 0.6 + periodIndex * 0.025;
+      const j     = () => Math.max(0, Math.min(1, base + (rand() - 0.5) * 0.28));
+      const raw   = {
+        lph:       +(span(0.5, 2.8) * (0.5 + j() * 0.7)).toFixed(2),
+        dials:     Math.round(span(300, 2800) * (0.6 + j() * 0.5)),
+        avgTalk:   Math.round(span(25, 90)),
+        acc:       Math.round(70 + j() * 30),
+        closeRate: +(span(4, 45) * (0.5 + j() * 0.7)).toFixed(1),
+        goldRate:  +(span(0, 4) * j()).toFixed(2),
+      };
+      const comp  = composite(raw, false);
+      const p     = PERIODS[periodIndex];
+      const nC    = 2 + Math.floor(rand() * 2);
+      const calls = Array.from({ length: nC }, () => {
+        const topic = pick(CALL_TOPICS);
+        return {
+          title: topic.title, tag: topic.tag, sentiment: 'Positive',
+          duration: 45 + Math.floor(rand() * 360), date: p.label,
+          transcript: pick(FLAVOR), src: null, trellusLink: null,
+        };
+      });
+      out.push({
+        id: 'A' + String(i + 1).padStart(3, '0'),
+        cardNo: i + 1,
+        first, last,
+        nameFirstLast: `${first} ${last}`, nameLastFirst: `${last}, ${first}`,
+        team, company: '', isEliteCall: true,
+        periodKey: p.key, periodLabel: p.label,
+        archived: periodIndex < PERIODS.length - 1,
+        photo: null, stats: raw, composite: comp,
+        tier:  weightedTierRoll(comp, `demo-${i}`, p.key),
+        grade: computeGrade(raw, false),
+        flavor: pick(FLAVOR),
+        strengths: [pick(STRENGTHS)].filter(Boolean),
+        growth:    [pick(GROWTH)].filter(Boolean),
+        trend: Array.from({ length: 8 }, () => Math.round(comp + (rand() - 0.45) * 22)),
+        trendLph: Array.from({ length: 8 }, () => +(Math.random() * 2.5).toFixed(2)),
+        trendAcc: Array.from({ length: 8 }, () => Math.round(75 + Math.random() * 25)),
+        calls,
+      });
+    }
+    return out;
+  }
+
+  function makeAllDemoPeriods() {
+    const byPeriod = {};
+    DEMO_PERIODS.forEach((p, idx) => (byPeriod[p.key] = makeDemoPeriod(idx, DEMO_PERIODS)));
+    return byPeriod;
+  }
+
+  // ============================================================================
+  //  PRODUCTION ADAPTER  (join 3 CSVs — kept for future use)
+  // ============================================================================
+  const NAME_KEY_COLUMNS = {
+    id: 'agent_id', dialedin: 'dialedin_name', trellus: 'trellus_name',
+    qa: 'qa_name', team: 'team', photo: 'photo_url',
   };
+  function hmsToMinutes(hms) {
+    if (!hms) return 0;
+    const p = String(hms).split(':').map(Number);
+    if (p.length === 3) return p[0] * 60 + p[1] + p[2] / 60;
+    if (p.length === 2) return p[0] + p[1] / 60;
+    return +hms || 0;
+  }
+  function pct(s) { return parseFloat(String(s).replace('%', '')) || 0; }
+  function qaScoreFromEvents(rows) {
+    if (!rows.length) return { score: 70, praise: 0, coaching: 0 };
+    let praise = 0, coaching = 0;
+    const feedback = [];
+    for (const r of rows) {
+      const code = (r['QA Code'] || '').toLowerCase();
+      if (code.includes('praise')) { praise++; if (r.Description) feedback.push({ kind: 'praise', text: r.Description }); }
+      else if (code.includes('coaching')) { coaching++; if (r.Description) feedback.push({ kind: 'coaching', text: r.Description }); }
+    }
+    const score = Math.max(20, Math.min(100, Math.round(72 + praise * 6 - coaching * 2.2)));
+    return { score, praise, coaching, feedback };
+  }
+  function trellusAgg(rows) {
+    if (!rows.length) return { sentiment: 60, objection: 60, calls: [] };
+    const sentMap = { positive: 92, mixed: 60, neutral: 55, negative: 25, '': 55 };
+    let sSum = 0;
+    rows.forEach((r) => (sSum += sentMap[(r.Sentiment || '').toLowerCase()] ?? 55));
+    const calls = rows.slice(0, 4).map((r) => ({
+      title: r.Disposition || r.Purpose || 'Call', tag: r.Campaign || '',
+      sentiment: r.Sentiment || 'Neutral',
+      duration: Math.round(+r['Duration (seconds)'] || 0),
+      date: (r.Timestamp || '').slice(0, 10),
+      transcript: (r['Transcript Text'] || '').slice(0, 220),
+      src: null, transcriptLink: r['Transcript Link'] || null,
+    }));
+    return { sentiment: Math.round(sSum / rows.length), objection: Math.min(100, 45 + rows.length / 3), calls };
+  }
+  function buildRoster({ keyCsv, dialedInCsv, trellusCsv, qaCsv, periodKey, periodLabel }) {
+    const key  = keyCsv ? parseCsv(keyCsv) : null;
+    const di   = indexBy(parseCsv(dialedInCsv), (r) => r.Rep);
+    const trBy = groupBy(parseCsv(trellusCsv), (r) => firstLastToLastFirst(r['Rep Name']));
+    const qaBy = groupBy(parseCsv(qaCsv), (r) => r.Rep);
+    const reps = key
+      ? key.map((k) => ({ lf: k[NAME_KEY_COLUMNS.dialedin], team: k[NAME_KEY_COLUMNS.team], photo: k[NAME_KEY_COLUMNS.photo], id: k[NAME_KEY_COLUMNS.id] }))
+      : Object.keys(di).map((lf) => ({ lf, team: '', photo: null, id: null }));
+    return reps.map((rep, i) => {
+      const d = di[rep.lf] || {};
+      const qa = qaScoreFromEvents(qaBy[rep.lf] || []);
+      const tr = trellusAgg(trBy[rep.lf] || []);
+      const s  = {
+        lph:       +(d.Leads || 0) / Math.max(1, +(d.Hours || 1)),
+        dials:     +(d.Dialed || 0),
+        avgTalk:   hmsToMinutes(d['Avg Talk Time']) * 60,
+        acc:       qa.score,
+        closeRate: pct(d['Conversion Rate']),
+        goldRate:  0,
+      };
+      const comp    = composite(s, false);
+      const nameFL  = lastFirstToFirstLast(rep.lf);
+      const [first, ...rest] = nameFL.split(' ');
+      return {
+        id: rep.id || 'A' + String(i + 1).padStart(3, '0'),
+        cardNo: i + 1, first, last: rest.join(' '),
+        nameFirstLast: nameFL, nameLastFirst: rep.lf,
+        team: rep.team || '', company: '', isEliteCall: true,
+        periodKey: periodKey || '', periodLabel: periodLabel || '',
+        archived: false, photo: rep.photo || null,
+        stats: s, composite: comp,
+        tier: weightedTierRoll(comp, rep.id || String(i), periodKey || ''),
+        flavor: '', strengths: [], growth: [],
+        trend: [], trendLph: [], trendAcc: [],
+        calls: tr.calls,
+      };
+    });
+  }
+  function indexBy(rows, keyFn)  { const o = {}; rows.forEach((r) => (o[(keyFn(r) || '').trim()] = r)); return o; }
+  function groupBy(rows, keyFn)  { const o = {}; rows.forEach((r) => { const k = (keyFn(r) || '').trim(); (o[k] = o[k] || []).push(r); }); return o; }
 
-  React.useEffect(() => () => stop(), []);
-  const bars = React.useMemo(() => Array.from({ length: 22 }, () => 0.25 + Math.random() * 0.75), []);
-  const sentColor = { positive: '#5fd29a', mixed: '#e0b24a', neutral: '#9aa6b8', negative: '#e0775f' }[(call.sentiment || '').toLowerCase()] || '#9aa6b8';
+  // ============================================================================
+  //  BOOTSTRAP
+  // ============================================================================
+  let PERIODS, CURRENT_PERIOD, ROSTER_BY_PERIOD, ROSTER;
 
-  const trellusHref = call.trellusLink || call.transcriptLink || 'https://app.trellus.ai';
-  const isReal = !!(call.trellusLink || call.transcriptLink);
+  if (window.AGENT_FEED_CSV) {
+    PERIODS = [{ key: '2026-W25', label: 'May 30 – Jun 26', short: 'W25' }];
+    CURRENT_PERIOD = PERIODS[0];
+    ROSTER = buildRosterFromAgentFeed(window.AGENT_FEED_CSV);
+    ROSTER_BY_PERIOD = { [CURRENT_PERIOD.key]: ROSTER };
+  } else {
+    PERIODS = DEMO_PERIODS;
+    CURRENT_PERIOD = DEMO_PERIODS[DEMO_PERIODS.length - 1];
+    ROSTER_BY_PERIOD = makeAllDemoPeriods();
+    ROSTER = ROSTER_BY_PERIOD[CURRENT_PERIOD.key];
+  }
 
-  return (
-    <div className="ec-call" onClick={(e) => e.stopPropagation()}>
-      {liveSrc && <audio ref={audioRef} src={liveSrc}
-        onTimeUpdate={(e) => setProg(e.target.currentTime / (e.target.duration || 1))}
-        onEnded={() => { stop(); setProg(0); }} />}
-      <button className={'ec-play' + (playing ? ' on' : '')} onClick={toggle} aria-label="Play sample call">
-        {playing ? '❚❚' : '►'}
-      </button>
-      <div className="ec-call-body">
-        <div className="ec-call-top">
-          <span className="ec-call-title" title={call.title} onClick={() => setOpen(o => !o)}>{call.title}</span>
-          <span className="ec-call-dur">{fmtDur(call.duration)}</span>
-        </div>
-        <div className="ec-wave">
-          {bars.map((h, i) => (
-            <span key={i} style={{
-              height: (h * 100) + '%',
-              background: i / bars.length <= prog ? 'var(--c-accent)' : 'currentColor',
-              opacity:    i / bars.length <= prog ? 1 : .3
-            }} />
-          ))}
-        </div>
-        <div className="ec-call-meta">
-          <span className="ec-sent" style={{ color: sentColor }}>● {call.sentiment}</span>
-          <span className="ec-call-links">
-            {!isReal && <span className="ec-demo">demo</span>}
-            <a className="ec-trellus-link" href={trellusHref} target="_blank" rel="noopener"
-               onClick={(e) => e.stopPropagation()}
-               title={isReal ? 'Open transcript in Trellus' : 'Opens Trellus once API is connected'}>
-              Trellus ↗
-            </a>
-          </span>
-        </div>
-        {open && call.transcript && <div className="ec-transcript">"{call.transcript}"</div>}
-      </div>
-    </div>
-  );
-}
-
-// ── Stars ─────────────────────────────────────────────────────────────────────
-function Stars({ n }) {
-  return (
-    <div className="ec-stars">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= n ? '' : 'ec-star-empty'}>★</span>
-      ))}
-    </div>
-  );
-}
-
-// ── Portrait ──────────────────────────────────────────────────────────────────
-// Handles suffixes like "IV" so William Kerth IV → WKIV
-function computeInitials(first, last) {
-  const f      = (first || '')[0] || '';
-  const words  = (last  || '').split(/\s+/);
-  const l      = (words[0] || '')[0] || '';
-  const suffix = words.slice(1).filter(w => /^[IVX]+$/i.test(w)).join('');
-  return (f + l + suffix).toUpperCase();
-}
-
-function Portrait({ agent }) {
-  const initials = computeInitials(agent.first, agent.last);
-  const isHail   = agent.company === 'hail911';
-  return (
-    <div className="ec-portrait">
-      {agent.photo
-        ? <img src={agent.photo} alt={agent.nameFirstLast} />
-        : <React.Fragment>
-            <div className="ec-halftone" />
-            <div className="ec-monogram">{initials.toUpperCase()}</div>
-          </React.Fragment>
-      }
-      {isHail && (
-        <span className="ec-cobadge" title="Hail911">
-          <img src={(window.__resources && window.__resources.hail911) || 'app/img/hail911-logo.jpg'} alt="Hail911" />
-        </span>
-      )}
-      <span className="ec-teamtag">{agent.team}</span>
-      {agent.grade != null && (
-        <div className="ec-grade" data-grade-level={agent.grade >= 9 ? 'gem' : agent.grade >= 7 ? 'mint' : agent.grade >= 5 ? 'fine' : 'good'}>
-          <div className="ec-grade-num">{agent.grade}</div>
-          <div className="ec-grade-lbl">Grade</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── TrendChart (toggle LPH vs ACC) ────────────────────────────────────────────
-function TrendChart({ trendLph, trendAcc }) {
-  const hasLph  = trendLph && trendLph.some(v => v > 0);
-  const hasAcc  = trendAcc && trendAcc.some(v => v > 0);
-  const [mode, setMode] = React.useState(hasAcc ? 'acc' : 'lph');
-  if (!hasLph && !hasAcc) return null;
-
-  const data    = mode === 'acc' ? (trendAcc || []) : (trendLph || []);
-  const nonZero = data.filter(v => v > 0);
-  const tMax    = nonZero.length ? Math.max(...nonZero) : 1;
-
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-        <div className="ec-section-t" style={{ margin: 0, border: 'none', paddingBottom: 0 }}>
-          8-Week Trend
-        </div>
-        {hasLph && hasAcc
-          ? <div className="ec-trend-toggle">
-              <button className="ec-tt-btn" data-on={mode === 'lph'} onClick={(e) => { e.stopPropagation(); setMode('lph'); }}>Leads</button>
-              <button className="ec-tt-btn" data-on={mode === 'acc'} onClick={(e) => { e.stopPropagation(); setMode('acc'); }}>ACC %</button>
-            </div>
-          : <span className="ec-trend-label">{hasAcc ? 'ACC %' : 'Leads'}</span>
-        }
-      </div>
-      <div className="ec-spark" style={{ marginTop: 6 }}>
-        {data.map((v, i) => (
-          <span key={i} style={{ height: Math.max(4, ((v || 0) / tMax) * 100) + '%' }} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Card front ────────────────────────────────────────────────────────────────
-function CardFront({ agent, tier, variant, setName }) {
-  const stats = ECStats();
-  return (
-    <div className="ec-face ec-face--front">
-      <div className="ec-foil" />
-      <div className="ec-rarity-ribbon">{tier.name}</div>
-      <div className="ec-inner">
-        <div className="ec-top">
-          <Stars n={tier.stars} />
-          <span className="ec-setbadge">{agent.company === 'hail911' ? 'Hail911' : setName}</span>
-          <span className="ec-cardno">#{String(agent.cardNo).padStart(3, '0')} / {String(window.EliteData.ROSTER.length).padStart(3, '0')}</span>
-        </div>
-        <Portrait agent={agent} />
-        <div className="ec-namebar"><div className="ec-name">{agent.nameFirstLast}</div></div>
-        <div className="ec-stats">
-          {stats.filter(s => s.front !== false).map((s) => {
-            const f = formatStat(s, agent.stats[s.key]);
-            return (
-              <div className="ec-stat" key={s.key}>
-                <div className="ec-stat-val">{f.val}<small>{f.unit}</small></div>
-                <div className="ec-stat-lbl">{s.label}</div>
-              </div>
-            );
-          })}
-        </div>
-        {agent.flavor && <div className="ec-flavor">"{agent.flavor}"</div>}
-        <div className="ec-footer">
-          <div className="ec-logo"><span className="ec-logo-dot" />Elite Call</div>
-          <span className="ec-season">{agent.periodLabel}{agent.archived ? ' · Archived' : ''}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Card back ─────────────────────────────────────────────────────────────────
-function CardBack({ agent, tier }) {
-  const stats = ECStats();
-  const D     = window.EliteData;
-
-  return (
-    <div className="ec-face ec-face--back">
-      <div className="ec-foil" />
-      <div className="ec-back-inner">
-        <div className="ec-back-head">
-          <div>
-            <div className="ec-back-name">{agent.nameFirstLast}</div>
-            <div style={{ fontSize: 11, opacity: .65, letterSpacing: '.5px', textTransform: 'uppercase' }}>
-              {tier.name} · {agent.team}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-            {agent.grade != null && (
-              <div className="ec-back-grade" data-grade-level={agent.grade >= 9 ? 'gem' : agent.grade >= 7 ? 'mint' : agent.grade >= 5 ? 'fine' : 'good'}>
-                {agent.grade}<small>Grade</small>
-              </div>
-            )}
-            <div className="ec-back-ovr">{agent.composite}<small>OVR</small></div>
-          </div>
-        </div>
-
-        <div className="ec-section-t">Stat Breakdown</div>
-        {stats.map((s) => {
-          const raw   = agent.stats[s.key];
-          const isNull = raw == null || (typeof raw === 'number' && isNaN(raw));
-          const score  = isNull ? 0 : D.scoreStat(s, raw);
-          const f      = formatStat(s, raw);
-          return (
-            <div className="ec-bar-row" key={s.key}>
-              <span className="ec-bar-lbl">{s.label}</span>
-              <span className="ec-bar-track">
-                {!isNull && <span className="ec-bar-fill" style={{ width: score + '%' }} />}
-              </span>
-              <span className="ec-bar-num">{f.val}{f.unit}</span>
-            </div>
-          );
-        })}
-
-        <TrendChart trendLph={agent.trendLph} trendAcc={agent.trendAcc} />
-
-        {agent.calls && agent.calls.length > 0 && (
-          <React.Fragment>
-            <div className="ec-section-t">Sample Calls <span style={{ opacity: .55, fontWeight: 400, letterSpacing: '.5px' }}>· via Trellus</span></div>
-            {agent.calls.slice(0, 3).map((c, i) => <CallPlayer key={i} call={c} />)}
-          </React.Fragment>
-        )}
-
-        {agent.strengths && agent.strengths.length > 0 && (
-          <React.Fragment>
-            <div className="ec-section-t">Strengths</div>
-            {agent.strengths.map((s, i) => (
-              <div className="ec-sg" key={i}><span className="ec-sg-mark">▲</span><span>{s}</span></div>
-            ))}
-          </React.Fragment>
-        )}
-
-        {agent.growth && agent.growth.length > 0 && (
-          <React.Fragment>
-            <div className="ec-section-t">Growth Areas</div>
-            {agent.growth.map((s, i) => (
-              <div className="ec-sg" key={i}><span className="ec-sg-mark" style={{ color: 'var(--red)' }}>▼</span><span>{s}</span></div>
-            ))}
-          </React.Fragment>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── TradingCard ───────────────────────────────────────────────────────────────
-function TradingCard({ agent, variant = 'vintage', setName = 'Elite Call', flippable = true, flipped: controlledFlipped, onFlip, style }) {
-  const [internalFlip, setInternalFlip] = React.useState(false);
-  const flipped = controlledFlipped !== undefined ? controlledFlipped : internalFlip;
-  const cardRef = React.useRef(null);
-  const tier    = ECTiers().find((t) => t.key === agent.tier) || ECTiers()[0];
-  const isFoil  = tier.key === 'mvp' || tier.key === 'hof' || tier.key === 'allstar';
-
-  const toggle = () => {
-    if (!flippable) return;
-    if (onFlip) onFlip(!flipped); else setInternalFlip(f => !f);
+  window.EliteData = {
+    STATS, TIERS, WEIGHTS, WEIGHTS_H911, PERIODS, CURRENT_PERIOD,
+    tierFor, scoreStat, composite, weightedTierRoll, computeGrade,
+    lastFirstToFirstLast, firstLastToLastFirst,
+    parseCsv, parseSampleCalls, buildRoster, buildRosterFromAgentFeed,
+    hmsToMinutes, qaScoreFromEvents, trellusAgg,
+    ROSTER_BY_PERIOD, ROSTER,
   };
-
-  // Mouse-reactive foil: track cursor position on the card
-  const onMouseMove = (e) => {
-    const el = cardRef.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', ((e.clientX - r.left) / r.width).toFixed(3));
-    el.style.setProperty('--my', ((e.clientY - r.top)  / r.height).toFixed(3));
-    el.setAttribute('data-mouse-active', 'true');
-  };
-  const onMouseLeave = () => {
-    const el = cardRef.current; if (!el) return;
-    el.style.removeProperty('--mx');
-    el.style.removeProperty('--my');
-    el.removeAttribute('data-mouse-active');
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      className="ec-card"
-      data-variant={variant}
-      data-tier={tier.key}
-      data-foil={isFoil}
-      data-company={agent.company || ''}
-      data-flipped={flipped}
-      style={{ cursor: flippable ? 'pointer' : 'default', ...style }}
-      onClick={toggle}
-      onMouseMove={isFoil ? onMouseMove : undefined}
-      onMouseLeave={isFoil ? onMouseLeave : undefined}
-      title={flippable ? 'Click to flip' : undefined}
-    >
-      <div className="ec-flip">
-        <CardFront agent={agent} tier={tier} variant={variant} setName={setName} />
-        <CardBack  agent={agent} tier={tier} />
-      </div>
-    </div>
-  );
-}
-
-Object.assign(window, { TradingCard, Stars });
-
-/* ── StaticCard (Base Set) ── */
-function StaticCard({ card, variant = 'chrome', style }) {
-  const meta = window.EliteBaseSet.TYPE_META[card.type] || window.EliteBaseSet.TYPE_META.Skill;
-  const rar  = window.EliteBaseSet.RARITY[card.rarity];
-  const isHuman  = card.type === 'Human';
-  const initials = isHuman ? card.title.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : null;
-  return (
-    <div className="sc-card" data-variant={variant} data-type={card.type} data-rarity={card.rarity}
-      data-foil={rar.foil} style={{ '--sc-accent': meta.accent, '--sc-tint': meta.tint, '--sc-rarcol': rar.color, ...style }}>
-      <div className="sc-foil" />
-      <div className="sc-inner">
-        <div className="sc-top">
-          <div className="sc-title" title={card.title}>{card.title}</div>
-          <div className="sc-rargem" title={rar.name}>{card.rarity}</div>
-        </div>
-        <div className="sc-typebar"><span className="sc-glyph">{meta.glyph}</span>{card.type}</div>
-        <div className="sc-art">
-          <div className="sc-halftone" />
-          {isHuman ? <div className="sc-monogram">{initials}</div> : <div className="sc-bigglyph">{meta.glyph}</div>}
-          {card.description && <div className="sc-trigger">{card.description}</div>}
-        </div>
-        <div className="sc-action"><span className="sc-action-lbl">Action</span>{card.action}</div>
-        <div className="sc-rules">{card.behavior}</div>
-        {card.flavor && <div className="sc-flavor">"{card.flavor}"</div>}
-        <div className="sc-footer">
-          <span className="sc-set">Base Set · {rar.name}</span>
-          <span className="sc-no">#{String(card.cardNo).padStart(3, '0')} / {String(window.EliteBaseSet.BASE_SET.length).padStart(3, '0')}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AnyCard(props) {
-  const c = props.agent || props.card;
-  if (c && c.kind === 'static') return <StaticCard card={c} variant={props.variant} style={props.style} />;
-  return <TradingCard {...props} />;
-}
-
-Object.assign(window, { StaticCard, AnyCard });
+})();

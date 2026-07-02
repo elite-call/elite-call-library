@@ -1,107 +1,167 @@
-/* Pack-opening ceremony styles */
+/* =============================================================================
+   TRELLUS CLIENT  ·  plug-and-play data source for transcripts + call audio
+   -----------------------------------------------------------------------------
+   TODAY: Trellus data arrives as a CSV your Google Script exports. The app reads
+   that file read-only (no exports triggered) — same as DialedIn and the QA sheet.
 
-.pk-stage { width: 100%; max-width: 1100px; display: grid; place-items: center; text-align: center; }
+   SOON: Trellus is opening direct API access. When that lands you only need to
+   drop the API key into TRELLUS_CONFIG below (or set window.TRELLUS_API_KEY before
+   this script loads / localStorage 'trellus_api_key'). Everything downstream —
+   including the call-audio players on the card backs — switches from the CSV /
+   demo path to live recordings with NO other code changes.
 
-/* --- Sealed pack --- */
-.pk-sealed { display: grid; place-items: center; gap: 26px; }
-.pk-sealed h2 { font-family:'Anton',sans-serif; font-size: clamp(30px,5vw,52px); margin: 0;
-  text-transform: uppercase; letter-spacing: 1px; }
-.pk-sealed h2 em { font-style: normal; color: var(--gold-lt); }
-.pk-sealed p { margin: 0; color: #9fb0d0; max-width: 440px; }
+   The rest of the app calls window.Trellus.getCalls(agent) and
+   window.Trellus.recordingUrl(call); both work in either mode.
+   ============================================================================= */
+(function () {
+  'use strict';
 
-.pk-pack {
-  width: 230px; height: 330px; border-radius: 12px; position: relative; cursor: pointer;
-  background:
-    linear-gradient(135deg, rgba(255,255,255,.35) 0 12%, transparent 22%),
-    repeating-linear-gradient(115deg, #163a6b 0 14px, #1d4a85 14px 28px),
-    linear-gradient(160deg, #d8a72a, #b5851a);
-  border: 2px solid rgba(255,255,255,.25);
-  box-shadow: 0 26px 60px -16px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.3) inset;
-  display: grid; place-items: center; overflow: hidden;
-  transition: transform .25s ease, box-shadow .25s ease;
-  animation: pk-bob 3.4s ease-in-out infinite;
-}
-.pk-pack:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 32px 70px -14px rgba(216,167,42,.55); }
-.pk-pack::before { content:''; position:absolute; inset:0;
-  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%);
-  background-size: 250% 250%; animation: ec-sheen 4s ease-in-out infinite; mix-blend-mode: screen; }
-.pk-pack-logo { position: relative; z-index: 2; display: grid; gap: 12px; justify-items: center; }
-.pk-pack-plate { background: rgba(8,18,40,.9); border: 1px solid rgba(255,255,255,.25); border-radius: 10px;
-  padding: 12px 16px; box-shadow: 0 6px 16px rgba(0,0,0,.4); }
-.pk-pack-plate img { height: 36px; width: auto; display: block; }
-.pk-pack-logo .ring { width: 60px; height: 60px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff, #1b3a63 65%); box-shadow: 0 0 0 4px var(--gold), 0 6px 16px rgba(0,0,0,.4); }
-.pk-pack-logo .title { font-family:'Anton',sans-serif; font-size: 26px; text-transform: uppercase; letter-spacing:1px;
-  color:#fff; text-shadow: 0 2px 6px rgba(0,0,0,.5); }
-.pk-pack-logo .sub { font-family:'Anton',sans-serif; font-size: 14px; letter-spacing: 3px; color: #0a1730;
-  background: #fff; padding: 3px 12px; border-radius: 4px; }
-.pk-pack .tear { position:absolute; top:0; left:0; right:0; height: 26px;
-  background: repeating-linear-gradient(90deg, #050d1f 0 9px, transparent 9px 18px) top/100% 12px no-repeat,
-              rgba(255,255,255,.12);
-  border-bottom: 2px dashed rgba(255,255,255,.4); }
+  const TRELLUS_CONFIG = {
+    // ⚠️ SECURITY: a key placed here is visible to anyone who opens this page.
+    // For production, leave this BLANK and route Trellus calls through a server-side
+    // proxy (your Google Apps Script can hold the key) — then point baseUrl at the
+    // proxy. The literal below is for prototype testing only; ROTATE it before launch.
+    apiKey:
+      (typeof window !== 'undefined' && window.TRELLUS_API_KEY) ||
+      (typeof localStorage !== 'undefined' && localStorage.getItem('trellus_api_key')) ||
+      '60be61f9e306f8a8d7cb351016c1b45274cbb7e9',
+    baseUrl: 'https://api.trellus.ai',   // confirm exact base + version path against Trellus docs
+    // Two auth styles per Trellus' note:
+    //   'bearer'  -> Authorization: Bearer <key>   (RPT endpoints)
+    //   'header'  -> api_key: <key>                 (bootstrap)
+    // Endpoint paths + response shapes below are best-guess placeholders pending docs.
+    endpoints: {
+      sessions:  { path: '/sessions', auth: 'bearer' },          // GET ?rep=&from=&to=
+      gold:      { path: '/gold',     auth: 'bearer' },          // GET ?rep=
+      bootstrap: { path: '/bootstrap', auth: 'header' },
+      recording: (id) => ({ path: `/sessions/${id}/recording`, auth: 'bearer' }),
+    },
+  };
 
-.pk-btn {
-  font-family:'Anton',sans-serif; text-transform: uppercase; letter-spacing: 1px; font-size: 18px;
-  color:#0a1730; background: linear-gradient(180deg, #f3cf6b, #d8a72a);
-  border: 2px solid rgba(0,0,0,.25); border-radius: 12px; padding: 13px 34px; cursor: pointer;
-  box-shadow: 0 8px 22px -6px rgba(216,167,42,.7); }
-.pk-btn:hover { filter: brightness(1.07); }
-.pk-btn.ghost { background: rgba(255,255,255,.06); color: #dbe5fb; border-color: rgba(255,255,255,.2); box-shadow: none; }
+  // Build auth headers for the requested style.
+  function authHeaders(style) {
+    const k = TRELLUS_CONFIG.apiKey;
+    return style === 'header' ? { api_key: k } : { Authorization: `Bearer ${k}` };
+  }
 
-/* pack rip animation */
-.pk-pack.ripping { animation: pk-rip .55s ease forwards; }
-@keyframes pk-rip {
-  0% { transform: scale(1); }
-  35% { transform: scale(1.08) rotate(-1deg); }
-  100% { transform: scale(1.5) rotate(4deg); opacity: 0; filter: brightness(2); }
-}
-@keyframes pk-bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-8px);} }
+  const isLive = () => !!TRELLUS_CONFIG.apiKey;
 
-/* --- Reveal --- */
-.pk-reveal { display: grid; place-items: center; gap: 22px; position: relative; }
-.pk-counter { font-family:'Anton',sans-serif; font-size: 15px; letter-spacing: 2px; text-transform: uppercase; color:#9fb0d0; }
-.pk-counter b { color: var(--gold-lt); }
-.pk-cardwrap { position: relative; display: grid; place-items: center; min-height: 470px; }
-.pk-cardwrap .ec-card { animation: pk-deal .45s cubic-bezier(.2,.9,.3,1) backwards; }
-@keyframes pk-deal { from { transform: translateY(40px) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+  // --- LIVE MODE (used once apiKey is set) ----------------------------------
+  async function fetchSessionsLive(repName, { from, to } = {}) {
+    const ep = TRELLUS_CONFIG.endpoints.sessions;
+    const u = new URL(TRELLUS_CONFIG.baseUrl + ep.path);
+    u.searchParams.set('rep', repName);          // Trellus uses "First Last"
+    if (from) u.searchParams.set('from', from);
+    if (to) u.searchParams.set('to', to);
+    const res = await fetch(u, { headers: authHeaders(ep.auth) });
+    if (!res.ok) throw new Error('Trellus API ' + res.status);
+    return res.json();
+  }
+  function recordingUrlLive(call) {
+    if (call && call.src) return call.src;
+    if (call && call.trellusId) {
+      const ep = TRELLUS_CONFIG.endpoints.recording(call.trellusId);
+      // NOTE: <audio src> can't send headers; if Trellus requires the bearer token
+      // on the recording endpoint, return a short-lived signed URL from the proxy
+      // instead. Query-param fallback shown here for prototype testing only.
+      return `${TRELLUS_CONFIG.baseUrl}${ep.path}?key=${encodeURIComponent(TRELLUS_CONFIG.apiKey)}`;
+    }
+    return null;
+  }
 
-.pk-dots { display: flex; gap: 9px; }
-.pk-dot { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.16);
-  border: 1px solid rgba(255,255,255,.25); }
-.pk-dot[data-state="current"] { background: var(--gold-lt); transform: scale(1.25); }
-.pk-dot[data-state="done"] { background: var(--gold); }
-.pk-dot[data-tier="mvp"], .pk-dot[data-tier="hof"] { box-shadow: 0 0 8px var(--gold-lt); }
+  // --- CSV / DEMO MODE (current) --------------------------------------------
+  // Calls are already attached to each agent by EliteData (from the CSV export
+  // or sample generator). recordingUrl returns null -> the player runs its
+  // clearly-labeled demo waveform until real recordings are available.
+  function getCallsCsv(agent) { return (agent && agent.calls) || []; }
+  function recordingUrlCsv(call) { return (call && call.src) || null; }
 
-.pk-hint { color:#8090b2; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; }
+  // --- MONTHLY SHUFFLE -------------------------------------------------------
+  // When a new edition drops on the 1st, the photo + audio shown on each card
+  // should re-shuffle (fresh variety) but stay STABLE within that month. We seed
+  // the shuffle with the agent id + period key so it's deterministic per edition.
+  function seedRand(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return () => { h += 0x6D2B79F5; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  function shuffle(arr, rand) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
 
-/* tier reveal flash */
-.pk-flash { position: fixed; inset: 0; z-index: 5; pointer-events: none; display:grid; place-items:center;
-  opacity: 0; }
-.pk-flash.show { animation: pk-flash-in 1.5s ease forwards; }
-.pk-flash .glow { position:absolute; inset:0; }
-.pk-flash .banner { position: relative; font-family:'Anton',sans-serif; text-transform: uppercase;
-  font-size: clamp(40px, 9vw, 110px); letter-spacing: 3px; color:#fff;
-  text-shadow: 0 0 30px rgba(255,220,120,.8), 0 6px 20px rgba(0,0,0,.6); transform: scale(.6); }
-.pk-flash.show .banner { animation: pk-banner .9s cubic-bezier(.2,1.4,.4,1) forwards; }
-@keyframes pk-flash-in { 0%{opacity:0;} 15%{opacity:1;} 80%{opacity:1;} 100%{opacity:0;} }
-@keyframes pk-banner { 0%{transform:scale(.5);opacity:0;} 50%{transform:scale(1.05);opacity:1;} 100%{transform:scale(1);opacity:1;} }
+  // Pick the photo for an agent this period from their Google Drive album.
+  // album = array of image URLs (one rep's folder). Returns one, rotated monthly.
+  // TODAY: albums aren't wired yet -> returns agent.photo (usually null -> monogram).
+  // SOON: pass the Drive album and it deterministically rotates per edition.
+  function photoFor(agent, periodKey, album) {
+    if (album && album.length) {
+      const rand = seedRand((agent.id || agent.nameFirstLast) + ':' + (periodKey || ''));
+      return shuffle(album, rand)[0];
+    }
+    return agent.photo || null;
+  }
 
-/* confetti particles */
-.pk-particles { position: fixed; inset: 0; z-index: 6; pointer-events: none; overflow: hidden; }
-.pk-particles i { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px;
-  animation: pk-fall linear forwards; }
-@keyframes pk-fall { to { transform: translateY(110vh) rotate(720deg); opacity: .2; } }
+  // Trellus has a "gold" tracker of standout sample calls. Each edition we shuffle
+  // a handful of an agent's gold calls onto their card back. Live mode pulls the
+  // gold list from the API; CSV/demo mode shuffles whatever calls are attached.
+  async function goldCallsFor(agent, periodKey, n) {
+    n = n || 3;
+    let calls;
+    if (isLive()) {
+      try {
+        const ep = TRELLUS_CONFIG.endpoints.gold;
+        const u = new URL(TRELLUS_CONFIG.baseUrl + ep.path);
+        u.searchParams.set('rep', agent.nameFirstLast);
+        const res = await fetch(u, { headers: authHeaders(ep.auth) });
+        const data = await res.json();
+        calls = (data.items || data || []).map((s) => ({
+          title: s.disposition || s.purpose || 'Gold Call',
+          tag: s.campaign || 'Gold',
+          sentiment: s.sentiment || 'Positive',
+          duration: Math.round(s.duration_seconds || 0),
+          date: (s.timestamp || '').slice(0, 10),
+          transcript: (s.transcript_text || '').slice(0, 220),
+          src: s.recording_url || null,                          // playable audio
+          trellusLink: s.permalink || s.transcript_link || null, // download/open in Trellus
+          trellusId: s.id || null,
+        }));
+      } catch (e) { console.warn('[Trellus] gold fetch failed:', e); calls = getCallsCsv(agent); }
+    } else {
+      calls = getCallsCsv(agent);
+    }
+    const rand = seedRand((agent.id || agent.nameFirstLast) + ':gold:' + (periodKey || ''));
+    return shuffle(calls, rand).slice(0, n);
+  }
 
-/* --- Summary fan --- */
-.pk-summary { display: grid; place-items: center; gap: 24px; width: 100%; }
-.pk-summary h2 { font-family:'Anton',sans-serif; font-size: clamp(28px,4vw,46px); margin:0; text-transform: uppercase; }
-.pk-summary h2 em { font-style: normal; color: var(--gold-lt); }
-.pk-fan { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; }
-.pk-fan .ec-card { transform: scale(.82); margin: -22px -8px; }
-.pk-best { font-size: 14px; letter-spacing: 1px; text-transform: uppercase; color:#9fb0d0; }
-.pk-best b { color: var(--gold-lt); }
-.pk-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-
-@media (prefers-reduced-motion: reduce) {
-  .pk-pack, .pk-pack::before, .pk-cardwrap .ec-card { animation: none; }
-}
+  window.Trellus = {
+    photoFor, goldCallsFor,
+    config: TRELLUS_CONFIG,
+    isLive,
+    /** Returns the agent's call clips. Async so live + CSV share one signature. */
+    async getCalls(agent) {
+      if (!isLive()) return getCallsCsv(agent);
+      try {
+        const sessions = await fetchSessionsLive(agent.nameFirstLast);
+        return (sessions.items || sessions || []).map((s) => ({
+          title: s.disposition || s.purpose || 'Call',
+          tag: s.campaign || '',
+          sentiment: s.sentiment || 'Neutral',
+          duration: Math.round(s.duration_seconds || 0),
+          date: (s.timestamp || '').slice(0, 10),
+          transcript: (s.transcript_text || '').slice(0, 220),
+          src: s.recording_url || null,
+          trellusId: s.id || null,
+        }));
+      } catch (e) {
+        console.warn('[Trellus] live fetch failed, falling back to CSV/demo:', e);
+        return getCallsCsv(agent);
+      }
+    },
+    /** Resolve a playable audio URL for a call, or null (demo mode). */
+    recordingUrl(call) { return isLive() ? recordingUrlLive(call) : recordingUrlCsv(call); },
+    /** Convenience for ops: stash a key at runtime without editing code. */
+    setApiKey(k) { TRELLUS_CONFIG.apiKey = k || ''; try { localStorage.setItem('trellus_api_key', k || ''); } catch (e) {} },
+  };
+})();
