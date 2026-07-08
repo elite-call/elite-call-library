@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Gold Call Library — Elite Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Roboto+Slab:wght@400;600&display=swap" rel="stylesheet">
+<!--
+  GOLD CALL LIBRARY — data-driven receiver, styled to match index.html.
+  Reads data/gold_calls.csv (calls flagged Gold in Trellus, pushed by the Card
+  Vault aggregator on the same weekly run that feeds agent_feed.csv).
+  Schema: session_id, agent_name, team, call_datetime, duration_sec,
+          disposition, prospect_name, cadence, highlight_note
+  highlight_note is Trellus's own AI-generated explanation for the Gold flag
+  (visible as a hover tooltip in the Trellus UI) — there's no coach attribution,
+  since gold status isn't manually curated.
+  Falls back to a small embedded sample if the CSV isn't reachable (file://,
+  or before the aggregator has run for the first time).
+-->
+<style>
+  :root{
+    --navy-900:#0a1730; --navy-850:#0d1f3b; --navy-800:#12294c; --navy-700:#1a3a66; --navy-600:#24548f;
+    --gold:#d8a72a; --gold-lt:#f2cf6b; --red:#c2402f;
+    --line:rgba(255,255,255,.10); --ink:#e9eefb; --mut:#9fb0d0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'Oswald',sans-serif;color:var(--ink);min-height:100vh;
+    background:radial-gradient(150% 110% at 50% -20%, #1a3a66 0%, #0c1d3a 48%, #060f22 100%);}
+  a{color:inherit}
+  .wrap{max-width:1340px;margin:0 auto;padding:0 26px 90px}
+
+  /* ---------- header (matches index.html) ---------- */
+  .hero{padding:40px 0 6px}
+  .wordmark{font-family:'Anton',sans-serif;font-size:clamp(34px,6.4vw,68px);line-height:.9;margin:0;
+    text-transform:uppercase;letter-spacing:.5px;color:#f4f7ff}
+  .wordmark em{font-style:normal;color:var(--gold-lt)}
+  .sub{margin:12px 0 0;color:var(--mut);max-width:560px;font-size:15px;line-height:1.4}
+
+  .headrow{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-top:22px;flex-wrap:wrap}
+  .backlink{font-family:'Oswald';font-weight:600;font-size:12px;letter-spacing:.6px;text-transform:uppercase;
+    padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);
+    color:#c3d0ec;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .backlink:hover{border-color:rgba(255,255,255,.3);color:#fff}
+
+  .readout{display:flex;gap:30px}
+  .stat-r{text-align:left}
+  .stat-r .n{font-family:'Anton';font-size:34px;color:var(--gold-lt);line-height:.9}
+  .stat-r .l{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--mut);margin-top:3px}
+
+  /* ---------- controls (matches index.html) ---------- */
+  .controls{display:flex;flex-wrap:wrap;gap:12px 14px;align-items:center;margin:22px 0 8px;
+    background:rgba(9,20,44,.72);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+  .search{flex:1;min-width:220px;position:relative;display:flex;align-items:center}
+  .search svg{position:absolute;left:13px;opacity:.5}
+  .search input{width:100%;background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:10px;
+    padding:11px 12px 11px 38px;color:#fff;font-family:inherit;font-size:14px}
+  .search input::placeholder{color:#7d8eb0}
+
+  .editline{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:34px 0 20px}
+  .editline .e{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--mut)}
+  .editline .e b{color:var(--gold-lt);font-weight:700}
+  .editline .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  .month-block:first-of-type .editline{margin-top:20px}
+
+  /* ---------- grid + card ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:40px 28px;justify-items:center}
+  .empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:80px 0;font-size:15px}
+  .loading{padding:70px 0;text-align:center;color:var(--mut)}
+  .err{margin:0 0 20px;padding:14px 16px;border:1px solid var(--red);border-radius:12px;background:#241318;color:#f0b8ac;font-size:13px}
+
+  .gc-card{width:300px;border-radius:16px;overflow:hidden;
+    background:linear-gradient(165deg,#1c3c68 0%,#122a4d 55%,#0c1f3c 100%);
+    border:1px solid rgba(216,167,42,.28);
+    box-shadow:0 22px 46px -14px rgba(4,10,26,.75), inset 0 0 0 1px rgba(255,255,255,.04);
+    display:flex;flex-direction:column}
+  .gc-inner{margin:10px;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:11px 12px;
+    display:flex;flex-direction:column;gap:9px;
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(0,0,0,.10))}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+  .teamtag{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:#fff;background:rgba(0,0,0,.5);padding:3px 9px;border-radius:5px;border:1px solid rgba(255,255,255,.12)}
+  .teamtag[data-team="Hail911"]{border-color:var(--red);color:#ffd6cc}
+  .setbadge{font-family:'Anton';font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:#0a1730;
+    background:linear-gradient(180deg,var(--gold-lt),var(--gold));padding:3px 11px;border-radius:999px;
+    border:1px solid rgba(0,0,0,.25);white-space:nowrap}
+
+  .namebar{margin-top:2px;text-align:center;border-radius:8px;padding:8px 8px 7px;
+    border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,#0f2547,#0a1a34)}
+  .name{font-family:'Anton';color:#fff;font-size:20px;line-height:1;letter-spacing:.5px;text-transform:uppercase}
+  .prospect{font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);margin-top:4px}
+
+  .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .tile{background:linear-gradient(180deg,rgba(36,84,143,.35),rgba(10,26,52,.6));border-radius:8px;padding:7px 3px 6px;
+    text-align:center;border:1px solid rgba(255,255,255,.08)}
+  .tile .v{font-family:'Anton';font-size:16px;line-height:1;color:var(--gold-lt)}
+  .tile .l{font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:#9fb0d0;margin-top:3px}
+
+  .sect{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin:2px 0 0;font-weight:700;
+    border-bottom:1px solid rgba(255,255,255,.10);padding-bottom:3px}
+  .sg{font-size:10.5px;line-height:1.4;margin:0;display:flex;gap:6px;color:#dbe4f7}
+  .sg .m{color:var(--gold);font-weight:700}
+  .muted-note{font-size:10px;color:#7f8fb0;font-style:italic;margin:0}
+
+  .call{display:flex;justify-content:space-between;gap:6px;align-items:center;margin:0;padding:7px 9px;border-radius:8px;
+    background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);font-size:10px;color:#cdd8f2}
+  .call a{color:var(--gold-lt);text-decoration:none;border:1px solid rgba(216,167,42,.5);border-radius:5px;padding:3px 9px;
+    font-size:9px;text-transform:uppercase;white-space:nowrap}
+  .call a:hover{background:rgba(216,167,42,.12)}
+
+  .foot{padding:9px 12px;display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid rgba(255,255,255,.08);font-size:9px;letter-spacing:.6px;text-transform:uppercase;color:#9fb0d0}
+  .foot .logo{display:flex;align-items:center;gap:6px;font-weight:700;color:#cdd8f2}
+  .foot .logo .dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--navy-700) 62%);box-shadow:0 0 0 1.5px var(--gold)}
+  .foot .rar{font-weight:700;color:var(--gold-lt)}
+
+  @media (max-width:560px){ .readout{gap:20px} .stat-r .n{font-size:26px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1 class="wordmark">Gold Call <em>Library</em></h1>
+    <p class="sub">Every standout call flagged Gold in Trellus, grouped by month. Built for coaches to pull up and play for the team.</p>
+
+    <div class="headrow">
+      <a class="backlink" href="index.html">&larr; Agent Cards</a>
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9fb0d0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="Search agent, team, disposition, prospect, or call notes…" oninput="render()">
+    </div>
+  </div>
+
+  <div id="msg"></div>
+  <div id="results"><div class="loading">Loading the library…</div></div>
+</div>
+
+<script>
+"use strict";
+
+var CSV_URL='data/gold_calls.csv';
+
+/* csv — same parser as index.html */
+function parseCsv(text){
+  var rows=[],row=[],f='',q=false;
+  for(var i=0;i<text.length;i++){var c=text[i];
+    if(q){if(c==='"'&&text[i+1]==='"'){f+='"';i++;}else if(c==='"')q=false;else f+=c;}
+    else if(c==='"')q=true;else if(c===','){row.push(f);f='';}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}
+    else if(c!=='\r')f+=c;}
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  var head=rows.shift().map(h=>h.trim());
+  return rows.filter(r=>r.length>1&&r.some(c=>c!==''))
+    .map(function(r){var o={};head.forEach((h,i)=>o[h]=(r[i]||'').trim());return o;});
+}
+
+function fetchCsv(u){return fetch(u,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(u+' HTTP '+r.status);return r.text();}).then(parseCsv);}
+
+var STATE={rows:[]};
+
+function fmtDuration(sec){var n=+sec||0;return Math.floor(n/60)+':'+String(Math.round(n%60)).padStart(2,'0');}
+function fmtDate(iso){var d=new Date(iso);if(isNaN(d))return iso||'\u2014';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtDateShort(iso){var d=new Date(iso);if(isNaN(d))return iso||'\u2014';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function monthKey(iso){var d=new Date(iso);if(isNaN(d))return 'Undated';
+  return d.toLocaleDateString('en-US',{month:'long',year:'numeric'});}
+function trellusLink(id){return 'https://app.trellus.ai/transcripts?id='+encodeURIComponent(id);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function card(r){
+  var team=r.team||'Unknown';
+  var notes=r.highlight_note
+    ? '<div class="sg"><span class="m">\u25b2</span><span>'+esc(r.highlight_note)+'</span></div>'
+    : '<div class="muted-note">No explanation captured for this call.</div>';
+  return '<div class="gc-card"><div class="gc-inner">'+
+    '<div class="top"><span class="teamtag" data-team="'+esc(team)+'">'+esc(team)+'</span>'+
+      '<span class="setbadge">'+esc(r.disposition||'Gold Call')+'</span></div>'+
+    '<div class="namebar"><div class="name">'+esc(r.agent_name||'Unknown Agent')+'</div>'+
+      (r.prospect_name?'<div class="prospect">'+esc(r.prospect_name)+'</div>':'')+'</div>'+
+    '<div class="tiles">'+
+      '<div class="tile"><div class="v">'+fmtDateShort(r.call_datetime)+'</div><div class="l">Call Date</div></div>'+
+      '<div class="tile"><div class="v">'+fmtDuration(r.duration_sec)+'</div><div class="l">Duration</div></div>'+
+    '</div>'+
+    '<div class="sect">Why It\u2019s Gold</div>'+notes+
+    '<div class="call"><span>'+esc(fmtDate(r.call_datetime))+'</span>'+
+      '<a href="'+trellusLink(r.session_id)+'" target="_blank" rel="noopener">View Session</a></div>'+
+    '</div>'+
+    '<div class="foot"><span class="logo"><span class="dot"></span>Elite Call</span>'+
+      '<span class="rar">Flagged by Trellus AI</span></div>'+
+    '</div>';
+}
+
+function searchable(r){
+  return [r.agent_name,r.team,r.disposition,r.prospect_name,r.cadence,r.highlight_note]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+function updateReadout(rows){
+  var months={};rows.forEach(r=>{months[monthKey(r.call_datetime)]=1;});
+  var divs={};rows.forEach(r=>{if(r.team)divs[r.team]=1;});
+  var thisMonthKey=monthKey(new Date().toISOString());
+  var thisMonth=rows.filter(r=>monthKey(r.call_datetime)===thisMonthKey).length;
+  document.getElementById('readout').innerHTML=
+    '<div class="stat-r"><div class="n">'+rows.length+'</div><div class="l">Gold Calls</div></div>'+
+    '<div class="stat-r"><div class="n">'+thisMonth+'</div><div class="l">This Month</div></div>'+
+    '<div class="stat-r"><div class="n">'+Object.keys(divs).length+'</div><div class="l">Divisions</div></div>';
+}
+
+function render(){
+  var results=document.getElementById('results');
+  var q=(document.getElementById('q').value||'').toLowerCase();
+  var filtered=q?STATE.rows.filter(r=>searchable(r).indexOf(q)>=0):STATE.rows;
+
+  if(!filtered.length){
+    results.innerHTML='<div class="empty">No gold calls match. Try a different agent, team, or keyword from a call\u2019s notes.</div>';
+    return;
+  }
+
+  var groups={};
+  filtered.forEach(r=>{var k=monthKey(r.call_datetime);(groups[k]=groups[k]||[]).push(r);});
+  var keys=Object.keys(groups).sort((a,b)=>new Date(groups[b][0].call_datetime)-new Date(groups[a][0].call_datetime));
+
+  results.innerHTML=keys.map(function(k){
+    var rows=groups[k].slice().sort((a,b)=>new Date(b.call_datetime)-new Date(a.call_datetime));
+    return '<div class="month-block">'+
+      '<div class="editline"><span class="e"><b>'+rows.length+'</b> gold call'+(rows.length===1?'':'s')+' \u00b7 <b>'+esc(k)+'</b></span><div class="rule"></div></div>'+
+      '<div class="grid">'+rows.map(card).join('')+'</div>'+
+      '</div>';
+  }).join('');
+}
+
+document.getElementById('q').addEventListener('input', render);
+
+/* Schema: session_id, agent_name, team, call_datetime, duration_sec,
+   disposition, prospect_name, cadence, highlight_note
+   highlight_note is Trellus's own AI-generated explanation for why the call
+   was flagged Gold — not a coach note, so there's no "tagged by" field. */
+var SAMPLE=parseCsv(
+"session_id,agent_name,team,call_datetime,duration_sec,disposition,prospect_name,cadence,highlight_note\n"+
+"TR-88213,Marcus Webb,Florida,2026-07-07T14:32:00-05:00,612,Appointment Set,Denise Ford,COASTAL HS26E ACTIVE 0520,\"The agent reframed a price objection to lifetime cost within seconds and kept a confident, consultative tone through the close.\"\n"+
+"TR-88190,Ariana Cole,Illinois,2026-07-06T10:05:00-05:00,540,Sale,Ray Hendricks,PRAIRIE HS26C ACTIVE 0518,\"Strong rapport-building in the first 30 seconds carried through to a same-call sale with no resistance.\"\n"+
+"TR-88177,DeShawn Price,Hail911,2026-07-03T09:14:00-05:00,780,Appointment Set,Karen Ostrowski,OKLAHOMA CITY OK RR26C 03102026,\"Walked a hesitant homeowner through the entire storm-damage claim process in plain language and secured a firm appointment window.\"\n"+
+"TR-88150,Ariana Cole,Illinois,2026-07-01T15:48:00-05:00,495,Callback Scheduled,,PRAIRIE HS26C ACTIVE 0518,\"Calm recovery after three prior no-shows \u2014 reset expectations without pushing and locked a specific callback time.\"\n"+
+"TR-87994,Jordan Yates,Florida,2026-06-24T11:22:00-05:00,660,Sale,Trent Aguilar,SUNBEAM SE26E RENEW 04,\"Converted an initial brush-off into a same-day close by re-anchoring value early in the call.\"\n"+
+"TR-87960,Priya Nair,Hail911,2026-06-19T13:57:00-05:00,720,Appointment Set,Bill Okafor,TOP NOTCH AR RR26C 05082026,\"Slowed down to confirm every detail before booking \u2014 no ambiguity left for the inspection team.\"\n"+
+"TR-87901,Marcus Webb,Florida,2026-06-12T09:40:00-05:00,585,Sale,Denise Ford,COASTAL HS26E ACTIVE 0520,\"Second gold call from the same account this period \u2014 consistent follow-through on a returning customer.\"\n"+
+"TR-87844,Leo Fitzgerald,Illinois,2026-06-05T16:10:00-05:00,510,Appointment Set,,PRAIRIE HS26C ACTIVE 0518,\"Clean recovery after a dropped call \u2014 called back within a minute and picked the pitch back up smoothly.\"\n"
+);
+
+fetchCsv(CSV_URL).then(function(rows){
+  STATE.rows=rows;
+  updateReadout(rows);
+  render();
+}).catch(function(e){
+  document.getElementById('msg').innerHTML='<div class="err">Couldn\u2019t load <code>'+CSV_URL+'</code> ('+e.message+'). Showing bundled sample data \u2014 this resolves once the page is served from the repo where the aggregator pushes the CSV.</div>';
+  STATE.rows=SAMPLE;
+  updateReadout(SAMPLE);
+  render();
+});
+</script>
+</body>
+</html>
