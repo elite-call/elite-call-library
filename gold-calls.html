@@ -99,6 +99,11 @@
     text-align:center;border:1px solid rgba(255,255,255,.08)}
   .tile .v{font-family:'Anton';font-size:16px;line-height:1;color:var(--gold-lt)}
   .tile .l{font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:#9fb0d0;margin-top:3px}
+  .campaign{margin-top:6px;background:linear-gradient(180deg,rgba(36,84,143,.28),rgba(10,26,52,.5));
+    border-radius:8px;padding:6px 10px;border:1px solid rgba(255,255,255,.08)}
+  .campaign .cl{font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:#5c7090;margin-bottom:2px}
+  .campaign .cv{font-size:10px;font-weight:600;color:#b8c8e4;letter-spacing:.2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .sect{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin:2px 0 0;font-weight:700;
     border-bottom:1px solid rgba(255,255,255,.10);padding-bottom:3px}
@@ -191,6 +196,7 @@ function card(r){
       '<div class="tile"><div class="v">'+fmtDateShort(r.call_datetime)+'</div><div class="l">Call Date</div></div>'+
       '<div class="tile"><div class="v">'+fmtDuration(r.duration_sec)+'</div><div class="l">Duration</div></div>'+
     '</div>'+
+    (r.cadence?'<div class="campaign"><div class="cl">Campaign</div><div class="cv">'+esc(r.cadence)+'</div></div>':'')+
     '<div class="sect">Why It\u2019s Gold</div>'+notes+
     '<div class="call"><span>'+esc(fmtDate(r.call_datetime))+'</span>'+
       '<a href="'+trellusLink(r.session_id)+'" target="_blank" rel="noopener">View Session</a></div>'+
