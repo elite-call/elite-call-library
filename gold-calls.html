@@ -124,16 +124,55 @@
   .foot .rar{font-weight:700;color:var(--gold-lt)}
 
   @media (max-width:560px){ .readout{gap:20px} .stat-r .n{font-size:26px} }
+
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(6,15,34,.88);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08)}
+  .topbar-in{max-width:1340px;margin:0 auto;padding:13px 26px;display:flex;align-items:center;gap:16px}
+  .tbrand{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+  .tbrand-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;
+    background:radial-gradient(circle at 38% 30%,#dce4f0 0%,#8a9ab2 44%,#384866 100%) center/54% 54% no-repeat,
+    conic-gradient(from 50deg,#1456b8 0deg,#5aaaf0 145deg,#1456b8 290deg,#07111f 290deg,#07111f 360deg);
+    box-shadow:0 0 0 2px rgba(90,170,240,.5)}
+  .tbrand-div{width:1px;height:22px;background:rgba(255,255,255,.18)}
+  .tbrand-name{font-family:'Anton',sans-serif;font-size:17px;letter-spacing:.5px;text-transform:uppercase;color:#f4f7ff}
+  .tbrand-name em{font-style:normal;color:#f2cf6b}
+  .tnav{display:flex;gap:4px}
+  .tnav a{font-family:'Oswald';font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.8px;
+    padding:7px 14px;border-radius:8px;color:#b9c6e2;transition:background .15s,color .15s;text-decoration:none}
+  .tnav a.active{background:linear-gradient(180deg,#f2cf6b,#d8a72a);color:#0a1730}
+  .tnav a:not(.active):hover{background:rgba(255,255,255,.08);color:#fff}
+  .tspacer{flex:1}
+  .tpack{font-family:'Anton';font-size:13px;letter-spacing:.5px;text-transform:uppercase;
+    color:#0a1730;background:linear-gradient(180deg,#f2cf6b,#d8a72a);
+    padding:8px 16px;border-radius:9px;border:1.5px solid rgba(0,0,0,.25);
+    box-shadow:0 3px 12px -3px rgba(216,167,42,.6);white-space:nowrap;text-decoration:none}
+  .tpack:hover{filter:brightness(1.07)}
 </style>
 </head>
 <body>
+<header class="topbar">
+  <div class="topbar-in">
+    <a href="index.html" class="tbrand">
+      <div class="tbrand-dot"></div>
+      <div class="tbrand-div"></div>
+      <span class="tbrand-name">Elite Call <em>Library</em></span>
+    </a>
+    <nav class="tnav">
+      <a href="index.html">Home</a>
+      <a href="card-vault.html">Card Vault</a>
+      <a href="gold-calls.html" class="active">Call Samples</a>
+      <a href="open-pack.html">Open a Pack</a>
+    </nav>
+    <div class="tspacer"></div>
+    <a href="open-pack.html" class="tpack">&#9733; Open a Pack</a>
+  </div>
+</header>
 <div class="wrap">
   <div class="hero">
     <h1 class="wordmark">Gold Call <em>Library</em></h1>
     <p class="sub">Every standout call flagged Gold in Trellus, grouped by month. Built for coaches to pull up and play for the team.</p>
 
     <div class="headrow">
-      <a class="backlink" href="index.html">&larr; Agent Cards</a>
+      <a class="backlink" href="card-vault.html">&larr; Card Vault</a>
       <div class="readout" id="readout"></div>
     </div>
   </div>
