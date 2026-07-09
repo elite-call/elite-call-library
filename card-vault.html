@@ -448,6 +448,15 @@ function scoreStat(s,r){
   return Math.max(0,Math.min(100,Math.round(num/s.max*100)));
 }
 
+function editionShort(s){
+  if(!s)return'Elite Call';
+  var m=s.match(/[A-Za-z]+/g);
+  if(!m)return'Elite Call';
+  var a=m[0].slice(0,3).toUpperCase();
+  var b=m[m.length-1].slice(0,3).toUpperCase();
+  return a===b?a:a+'–'+b;
+}
+
 function composite(r){var sum=0,w=0;STATS.forEach(function(s){var sc=scoreStat(s,r);if(sc==null)return;var ww=WEIGHTS[s.key]||0;sum+=sc*ww;w+=ww;});return w?Math.round(sum/w):0;}
 
 function fmtStat(s,r){
@@ -564,7 +573,7 @@ function card(r,cardNo,total,cellIdx){
   var front='<div class="face front"><div class="foil"></div><div class="inner">'+
     '<div class="top">'+
       '<span class="stars">'+stars+'</span>'+
-      '<span class="setbadge">Elite Call</span>'+
+      '<span class="setbadge">'+editionShort(r.period_label)+'</span>'+
       '<span class="cardno">#'+String(cardNo).padStart(3,'0')+' / '+String(total).padStart(3,'0')+'</span>'+
     '</div>'+
     '<div class="portrait">'+
