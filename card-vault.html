@@ -344,15 +344,13 @@
 <header class="topbar">
   <div class="topbar-in">
     <a href="index.html" class="brand" style="text-decoration:none">
-      <div class="brand-dot"></div>
-      <div class="brand-div"></div>
-      <span class="brand-name">Elite Call <em>Library</em></span>
+      <img src="https://i.imgur.com/GSnR39p.png" alt="Elite Call Library" style="height:26px;object-fit:contain;object-position:left">
     </a>
     <nav class="nav-tabs">
       <a href="index.html">Home</a>
       <a href="card-vault.html" class="active">Card Vault</a>
       <a href="gold-calls.html">Call Samples</a>
-      <a href="open-pack.html">Open a Pack</a>
+      <a href="whats-new.html">What's New</a>
     </nav>
     <div class="topbar-spacer"></div>
     <a href="open-pack.html" class="pack-cta">&#9733; Open a Pack</a>
@@ -894,6 +892,15 @@ var SAMPLE=parseCsv(
 "77c02,Marcus Reed,Hail911,hail911,false,-,230,214,40,8.2,4,3.1,6400,30,2,0.24,0,,\u2014,0.05,2|3|1|4,,,,,,,2026-W27,x,4,80,,HAIL,0,0,,,,0.44,Jun 27 \u2013 Jul 24,,0.2|0.3|0.1|0.24,,[],1,no"
 );
 boot();
+
+/* ---- What's New badge ---- */
+(function(){
+  function getWeekId(){var d=new Date(),thu=new Date(d.setDate(d.getDate()-((d.getDay()+6)%7)+3)),yea=new Date(thu.getFullYear(),0,4);return thu.getFullYear()+'W'+String(1+Math.round((thu-yea)/604800000)).padStart(2,'0');}
+  if(localStorage.getItem('ec_wn_seen')!==getWeekId()){
+    var lnk=document.querySelector('a[href="whats-new.html"]');
+    if(lnk){var b=document.createElement('span');b.style.cssText='display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#e02530;color:#fff;font-size:8px;font-weight:700;margin-left:5px;vertical-align:middle;flex-shrink:0;';b.textContent='!';lnk.appendChild(b);}
+  }
+})();
 </script>
 <div class="cmp-bar" id="cmpBar" style="display:none">
   <span class="cmp-bar-count" id="cmpCount"></span>

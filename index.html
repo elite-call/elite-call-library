@@ -4,228 +4,155 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Elite Call Library</title>
-<!--
-  IMAGE ASSETS — create an /assets/ folder in the repo root and place:
-    emblem.png          → the circular blue Elite Call logo
-    logo-horizontal.png → the horizontal "ELITE C@LL" signature
-    hail911.png         → the Hail911 logo (no background)
--->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --navy-deep:#040c1c; --navy:#0a1428; --navy-mid:#12294c;
-    --blue:#1a5fd4; --blue-lt:#4a9ff0;
-    --silver:#c8d4e8; --silver-lt:#eef2fc;
-    --gold:#d8a72a; --gold-lt:#f2cf6b;
-    --red:#c42028; --mut:#3e5270; --ink:#e8eef8;
+    --navy-deep:#040c1c;--navy:#0a1428;
+    --blue:#1a5fd4;--blue-lt:#4a9ff0;
+    --silver:#c8d4e8;--silver-lt:#eef2fc;
+    --gold:#d8a72a;--gold-lt:#f2cf6b;
+    --red:#c42028;--mut:#3e5270;--ink:#e8eef8;
     --line:rgba(255,255,255,.08);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{font-family:'Oswald',sans-serif;color:var(--ink);
-    background:radial-gradient(ellipse 90% 70% at 50% -6%,#1a3a6e 0%,#0a1a38 42%,#040c1c 100%) fixed;}
+    background:radial-gradient(ellipse 100% 80% at 50% -6%,#1a3a6e 0%,#0a1a38 42%,#040c1c 100%) fixed}
   a{text-decoration:none;color:inherit}
 
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
   @keyframes ring1{0%,100%{opacity:.45;transform:scale(1)}50%{opacity:.85;transform:scale(1.03)}}
   @keyframes ring2{0%,100%{opacity:.22;transform:scale(1)}50%{opacity:.52;transform:scale(1.055)}}
   @keyframes ring3{0%,100%{opacity:.1;transform:scale(1)}50%{opacity:.28;transform:scale(1.08)}}
-  @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  @keyframes reveal-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes beam{0%,100%{opacity:.07}50%{opacity:.2}}
   @keyframes slow-ring{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes reveal-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes beam{0%,100%{opacity:.07}50%{opacity:.2}}
+  @keyframes fade-in{from{opacity:0}to{opacity:1}}
 
-  /* ---- Topbar ---- */
-  .topbar{position:sticky;top:0;z-index:40;
-    background:rgba(4,12,28,.88);backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--line)}
-  .topbar-in{max-width:1340px;margin:0 auto;padding:12px 26px;
-    display:flex;align-items:center;gap:14px}
-  .brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
-  .brand img{height:26px;object-fit:contain;object-position:left}
-  .brand-dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;
-    background:
-      radial-gradient(circle at 38% 30%,#dce4f0 0%,#8a9ab2 44%,#384866 100%) center/54% 54% no-repeat,
-      conic-gradient(from 50deg,#1456b8 0deg,#5aaaf0 145deg,#1456b8 290deg,#07111f 290deg,#07111f 360deg);
-    box-shadow:0 0 0 2px rgba(90,170,240,.5)}
-  .brand-div{width:1px;height:22px;background:rgba(255,255,255,.16)}
-  .brand-name{font-family:'Anton';font-size:17px;letter-spacing:.5px;text-transform:uppercase;color:#f4f7ff}
-  .brand-name em{font-style:normal;color:var(--gold-lt)}
-  .nav-tabs{display:flex;gap:4px;margin-left:4px}
-  .nav-tabs a{font-family:'Oswald';font-weight:600;font-size:13px;text-transform:uppercase;
-    letter-spacing:.8px;padding:7px 14px;border-radius:8px;color:#b9c6e2;
-    transition:background .15s,color .15s}
-  .nav-tabs a.active{background:linear-gradient(180deg,var(--gold-lt),var(--gold));color:#0a1730}
-  .nav-tabs a:not(.active):hover{background:rgba(255,255,255,.08);color:#fff}
-  .topbar-spacer{flex:1}
-  .pack-cta{font-family:'Anton';font-size:13px;letter-spacing:.5px;text-transform:uppercase;
-    color:#0a1730;background:linear-gradient(180deg,var(--gold-lt),var(--gold));
-    padding:8px 18px;border-radius:9px;border:1.5px solid rgba(0,0,0,.2);
-    box-shadow:0 3px 12px -3px rgba(216,167,42,.55);white-space:nowrap}
-  .pack-cta:hover{filter:brightness(1.07)}
-
-  /* ---- Hero ---- */
-  .hero{position:relative;min-height:calc(100vh - 56px);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:0;overflow:hidden;padding:40px 24px 56px}
-
-  /* background dot grid */
+  /* ---- Hero (full viewport) ---- */
+  .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:0;overflow:hidden;padding:48px 24px 52px}
   .hero::before{content:'';position:absolute;inset:0;
     background-image:radial-gradient(rgba(74,159,240,.85) 1px,transparent 1.4px);
-    background-size:30px 30px;opacity:.14;pointer-events:none}
-
-  /* light beams */
-  .beam{position:absolute;top:50%;left:50%;width:2px;border-radius:2px;pointer-events:none;
-    background:linear-gradient(180deg,rgba(74,159,240,.22),transparent);
+    background-size:30px 30px;opacity:.13;pointer-events:none}
+  .beam{position:absolute;top:50%;left:50%;border-radius:2px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(74,159,240,.2),transparent);
     transform-origin:50% 0%;animation:beam 4s ease-in-out infinite}
 
+  /* subtle brand corner */
+  .brand-corner{position:absolute;top:28px;left:50%;transform:translateX(-50%);
+    animation:fade-in 1s ease .3s both;z-index:5}
+  .brand-corner img{height:28px;object-fit:contain;opacity:.7;display:block}
+
   /* ---- Emblem ---- */
-  .emblem-wrap{position:relative;width:288px;height:288px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+  .emblem-wrap{position:relative;width:260px;height:260px;display:flex;align-items:center;justify-content:center;margin-bottom:0}
   .ring{position:absolute;border-radius:50%;border-style:solid;border-color:rgba(74,159,240,1)}
-  .ring-3{width:278px;height:278px;border-width:1px;opacity:.28;animation:ring3 4.2s ease-in-out .4s infinite}
-  .ring-2{width:232px;height:232px;border-width:1px;opacity:.5;animation:ring2 3.6s ease-in-out .2s infinite}
-  .ring-1{width:190px;height:190px;border-width:1.5px;opacity:.72;animation:ring1 3s ease-in-out infinite}
-  .ring-spin{width:232px;height:232px;border-radius:50%;border:1px dashed rgba(74,159,240,.18);
-    position:absolute;animation:slow-ring 22s linear infinite}
-  .corona{position:absolute;width:158px;height:158px;border-radius:50%;
-    background:radial-gradient(circle,rgba(26,95,212,.38) 0%,transparent 70%)}
-  .emblem-img{width:144px;height:144px;object-fit:contain;position:relative;z-index:2;
+  .ring-spin{width:250px;height:250px;border-radius:50%;position:absolute;
+    border:1px dashed rgba(74,159,240,.18);animation:slow-ring 22s linear infinite}
+  .ring-3{width:252px;height:252px;border-width:1px;opacity:.28;animation:ring3 4.2s ease-in-out .4s infinite}
+  .ring-2{width:210px;height:210px;border-width:1px;opacity:.5;animation:ring2 3.6s ease-in-out .2s infinite}
+  .ring-1{width:172px;height:172px;border-width:1.5px;opacity:.72;animation:ring1 3s ease-in-out infinite}
+  .corona{position:absolute;width:142px;height:142px;border-radius:50%;
+    background:radial-gradient(circle,rgba(26,95,212,.4) 0%,transparent 70%)}
+  .emblem-img{width:128px;height:128px;object-fit:contain;position:relative;z-index:2;
     animation:float 5s ease-in-out infinite}
-  /* CSS fallback if image missing */
-  .emblem-fallback{display:none;width:144px;height:144px;border-radius:50%;
-    background:radial-gradient(circle at 38% 30%,#dce4f0 0%,#8a9ab2 44%,#384866 100%) center/54% 54% no-repeat,
-    conic-gradient(from 50deg,#1456b8 0deg,#5aaaf0 145deg,#1456b8 290deg,#07111f 290deg,#07111f 360deg);
-    position:relative;z-index:2;animation:float 5s ease-in-out infinite}
-  .emblem-img.hidden+.emblem-fallback{display:block}
 
   /* ---- Wordmark ---- */
-  .wordmark-block{text-align:center;animation:reveal-up .7s ease .15s both;margin-top:-4px}
-  .wordmark{font-family:'Anton',sans-serif;font-size:clamp(60px,9vw,92px);line-height:.84;
+  .wordmark-block{text-align:center;animation:reveal-up .7s ease .2s both;margin-top:6px}
+  .wordmark{font-family:'Anton',sans-serif;font-size:clamp(56px,8.5vw,86px);line-height:.84;
     text-transform:uppercase;letter-spacing:2px;
     background:linear-gradient(180deg,#eef2fc 0%,#c8d4e8 38%,#8a9ab2 100%);
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .lib{font-family:'Anton',sans-serif;font-size:clamp(22px,3vw,30px);text-transform:uppercase;
+  .lib{font-family:'Anton',sans-serif;font-size:clamp(20px,2.8vw,28px);text-transform:uppercase;
     letter-spacing:18px;
     background:linear-gradient(180deg,#4a9ff0,#1a5fd4);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:6px}
-  .tagline{font-family:'Oswald';font-size:12px;color:var(--mut);letter-spacing:2px;
-    text-transform:uppercase;margin-top:14px}
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:4px}
+  .tagline{font-size:11px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;margin-top:12px}
 
-  /* ---- Destination tiles ---- */
-  .dest-tiles{display:flex;gap:16px;margin-top:34px;flex-wrap:wrap;justify-content:center;
-    animation:reveal-up .7s ease .3s both}
-  .dest-tile{display:flex;flex-direction:column;gap:7px;width:256px;padding:18px 22px;
-    border-radius:14px;border:1px solid;transition:border-color .15s,background .15s}
-  .dest-tile.blue{background:linear-gradient(155deg,rgba(26,95,212,.18),rgba(4,12,28,.85));border-color:rgba(74,159,240,.3)}
-  .dest-tile.blue:hover{border-color:rgba(74,159,240,.65);background:linear-gradient(155deg,rgba(26,95,212,.28),rgba(4,12,28,.9))}
-  .dest-tile.gold{background:linear-gradient(155deg,rgba(216,167,42,.12),rgba(4,12,28,.85));border-color:rgba(216,167,42,.28)}
-  .dest-tile.gold:hover{border-color:rgba(216,167,42,.6);background:linear-gradient(155deg,rgba(216,167,42,.2),rgba(4,12,28,.9))}
-  .dest-tile.red{background:linear-gradient(155deg,rgba(196,32,40,.13),rgba(4,12,28,.85));border-color:rgba(196,32,40,.28)}
-  .dest-tile.red:hover{border-color:rgba(196,32,40,.6);background:linear-gradient(155deg,rgba(196,32,40,.22),rgba(4,12,28,.9))}
+  /* ---- Two destination tiles ---- */
+  .dest-tiles{display:flex;gap:20px;margin-top:38px;flex-wrap:wrap;justify-content:center;
+    animation:reveal-up .7s ease .35s both}
+  .dest-tile{display:flex;flex-direction:column;gap:9px;width:300px;padding:22px 26px;
+    border-radius:16px;border:1px solid;transition:border-color .18s,background .18s,transform .18s;
+    cursor:pointer}
+  .dest-tile:hover{transform:translateY(-4px)}
+  .dest-tile.blue{background:linear-gradient(150deg,rgba(26,95,212,.2),rgba(4,12,28,.88));border-color:rgba(74,159,240,.32)}
+  .dest-tile.blue:hover{border-color:rgba(74,159,240,.72);background:linear-gradient(150deg,rgba(26,95,212,.3),rgba(4,12,28,.92))}
+  .dest-tile.gold{background:linear-gradient(150deg,rgba(216,167,42,.14),rgba(4,12,28,.88));border-color:rgba(216,167,42,.3)}
+  .dest-tile.gold:hover{border-color:rgba(216,167,42,.65);background:linear-gradient(150deg,rgba(216,167,42,.22),rgba(4,12,28,.92))}
   .dt-num{font-size:9px;letter-spacing:2px;text-transform:uppercase;font-weight:700}
   .dest-tile.blue .dt-num{color:var(--blue-lt)}
   .dest-tile.gold .dt-num{color:var(--gold)}
-  .dest-tile.red .dt-num{color:#e02530}
-  .dt-name{font-family:'Anton';font-size:20px;text-transform:uppercase;color:var(--ink);letter-spacing:.4px;line-height:1}
-  .dt-desc{font-size:12px;color:var(--mut);line-height:1.4}
-  .dt-cta{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+  .dt-name{font-family:'Anton';font-size:24px;text-transform:uppercase;color:var(--ink);letter-spacing:.4px;line-height:1}
+  .dt-desc{font-size:13px;color:var(--mut);line-height:1.5}
+  .dt-cta{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:6px}
   .dest-tile.blue .dt-cta{color:var(--blue-lt)}
   .dest-tile.gold .dt-cta{color:var(--gold)}
-  .dest-tile.red .dt-cta{color:#e02530}
 
-  /* ---- Ticker strip ---- */
-  .ticker-bar{display:flex;align-items:center;height:36px;border-top:1px solid var(--line);
-    background:rgba(4,12,28,.94);overflow:hidden}
+  /* Subtle What's New hint below tiles */
+  .wnhint{margin-top:28px;animation:reveal-up .7s ease .5s both;
+    font-size:11px;color:#1e3258;letter-spacing:1.5px;text-transform:uppercase}
+  .wnhint a{color:#2a4878;border-bottom:1px solid rgba(74,159,240,.2);
+    padding-bottom:1px;transition:color .15s,border-color .15s}
+  .wnhint a:hover{color:#4a9ff0;border-color:rgba(74,159,240,.5)}
+
+  /* ---- Ticker ---- */
+  .ticker-bar{position:absolute;bottom:0;left:0;right:0;height:36px;
+    background:rgba(4,12,28,.94);border-top:1px solid var(--line);
+    overflow:hidden;display:flex;align-items:center}
   .ticker-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
     color:var(--blue-lt);padding:0 18px;flex-shrink:0;border-right:1px solid var(--line);white-space:nowrap}
   .ticker-scroll{overflow:hidden;flex:1}
-  .ticker-inner{display:flex;gap:40px;animation:ticker 22s linear infinite;white-space:nowrap;padding-left:20px;width:max-content}
+  .ticker-inner{display:flex;gap:40px;animation:ticker 22s linear infinite;
+    white-space:nowrap;padding-left:20px;width:max-content}
   .ti{font-size:10px;color:#7a8fa8;letter-spacing:.8px}
   .ti-dot{color:#1a3560;font-size:9px}
 
-  /* ---- Features (below fold) ---- */
-  .features{max-width:1100px;margin:0 auto;padding:80px 26px 100px;display:grid;
-    grid-template-columns:1fr 1fr;gap:48px 56px}
-  @media(max-width:860px){.features{grid-template-columns:1fr}}
-  .feat-sect{display:flex;flex-direction:column;gap:14px}
-  .feat-heading{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--blue);margin-bottom:2px}
-  .feat-title{font-family:'Anton';font-size:26px;text-transform:uppercase;color:var(--ink);line-height:1}
-  .feat-div{width:36px;height:2px;background:var(--blue);border-radius:2px}
+  /* ---- What's New preview (below fold) ---- */
+  .wn-section{max-width:860px;margin:0 auto;padding:80px 26px 100px}
+  .wn-header{display:flex;align-items:flex-end;justify-content:space-between;
+    margin-bottom:32px;flex-wrap:wrap;gap:12px}
+  .wn-title-block .sup{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--blue);margin-bottom:6px}
+  .wn-title-block h2{font-family:'Anton';font-size:36px;text-transform:uppercase;color:var(--ink);margin:0;line-height:1}
+  .wn-divider{width:36px;height:2px;background:var(--blue);border-radius:2px;margin-top:10px}
+  .see-all{font-family:'Oswald';font-size:12px;font-weight:600;letter-spacing:1px;
+    text-transform:uppercase;color:var(--blue-lt);border:1px solid rgba(74,159,240,.3);
+    padding:8px 16px;border-radius:8px;transition:background .15s,border-color .15s}
+  .see-all:hover{background:rgba(74,159,240,.1);border-color:rgba(74,159,240,.6)}
 
-  /* top performer */
-  .top-card{background:linear-gradient(155deg,rgba(26,95,212,.15),rgba(4,12,28,.65));
-    border:1px solid rgba(74,159,240,.25);border-radius:14px;padding:18px 20px;
-    display:flex;align-items:center;gap:16px;margin-top:4px}
-  .top-avatar{width:54px;height:54px;border-radius:50%;
-    background:linear-gradient(150deg,#1a5fd4,#0d3a8a);
-    display:grid;place-items:center;flex-shrink:0;
-    border:2px solid rgba(74,159,240,.4)}
-  .top-avatar span{font-family:'Anton';font-size:20px;color:var(--ink)}
-  .top-name{font-family:'Anton';font-size:20px;text-transform:uppercase;color:var(--ink);line-height:1}
-  .top-sub{font-size:11px;color:var(--mut);margin-top:3px}
-  .top-ovr{text-align:right}
-  .top-ovr .n{font-family:'Anton';font-size:42px;color:var(--blue-lt);line-height:1}
-  .top-ovr .l{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
+  .cl-grid{display:flex;flex-direction:column;gap:12px}
+  .cl-item{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;
+    background:rgba(0,0,0,.2);border:1px solid var(--line);border-radius:12px}
+  .cl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .cl-body{}
+  .cl-feat{font-family:'Anton';font-size:14px;text-transform:uppercase;color:var(--ink);
+    letter-spacing:.3px;line-height:1;margin-bottom:4px}
+  .cl-desc{font-size:12px;color:#4e6280;line-height:1.5}
+  .cl-badge{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:700;
+    margin-left:auto;flex-shrink:0;padding:3px 8px;border-radius:4px;align-self:flex-start}
 
-  /* stats pills */
-  .stat-pills{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
-  .stat-pill{flex:1;min-width:80px;background:rgba(0,0,0,.3);border:1px solid var(--line);
-    border-radius:10px;padding:14px 16px}
-  .stat-pill .n{font-family:'Anton';font-size:32px;line-height:1}
-  .stat-pill .l{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin-top:4px}
-  .sp-blue .n{color:var(--blue-lt)}
-  .sp-gold .n{color:var(--gold)}
-  .sp-green .n{color:#7cb86a}
-
-  /* changelog */
-  .changelog{display:flex;flex-direction:column;gap:10px;margin-top:4px}
-  .cl-item{display:flex;align-items:flex-start;gap:10px}
-  .cl-dot{font-size:9px;margin-top:3px;flex-shrink:0}
-  .cl-txt{font-size:13px;color:#6a7a96;line-height:1.5}
-
-  /* about */
-  .about-body{font-size:13px;color:#4e6280;line-height:1.8;margin-top:4px}
-  .about-body p{margin:0 0 10px}
-  .about-body strong{color:#8a9ab2;font-weight:600}
-
-  @media(max-width:680px){
+  @media(max-width:640px){
     .dest-tiles{flex-direction:column;align-items:center}
     .dest-tile{width:100%;max-width:340px}
-    .nav-tabs a{padding:6px 10px;font-size:11px}
-    .pack-cta{display:none}
   }
 </style>
 </head>
 <body>
 
-<!-- ===== TOPBAR ===== -->
-<header class="topbar">
-  <div class="topbar-in">
-    <a href="index.html" class="brand">
-      <img src="assets/logo-horizontal.png" alt="Elite Call Library" onerror="this.style.display='none'">
-      <div class="brand-dot" style="display:none" id="brandDotFallback"></div>
-      <div class="brand-div" id="brandDivFallback" style="display:none"></div>
-      <span class="brand-name" id="brandNameFallback" style="display:none">Elite Call <em>Library</em></span>
-    </a>
-    <nav class="nav-tabs">
-      <a href="index.html" class="active">Home</a>
-      <a href="card-vault.html">Card Vault</a>
-      <a href="gold-calls.html">Call Samples</a>
-      <a href="open-pack.html">Open a Pack</a>
-    </nav>
-    <div class="topbar-spacer"></div>
-    <a href="open-pack.html" class="pack-cta">&#9733; Open a Pack</a>
-  </div>
-</header>
-
-<!-- ===== HERO ===== -->
 <div class="hero">
-  <!-- Decorative beams -->
-  <div class="beam" style="height:320px;transform:translate(-50%,-50%) rotate(-32deg);animation-delay:0s"></div>
-  <div class="beam" style="height:280px;width:1px;background:linear-gradient(180deg,rgba(74,159,240,.14),transparent);transform:translate(-50%,-50%) rotate(22deg);animation-delay:.5s"></div>
-  <div class="beam" style="height:300px;background:linear-gradient(180deg,rgba(196,32,40,.13),transparent);transform:translate(-50%,-50%) rotate(-68deg);animation-delay:1s"></div>
-  <div class="beam" style="height:260px;width:1px;background:linear-gradient(180deg,rgba(196,32,40,.1),transparent);transform:translate(-50%,-50%) rotate(56deg);animation-delay:1.5s"></div>
+  <!-- Beams -->
+  <div class="beam" style="width:2px;height:340px;transform:translate(-50%,-50%) rotate(-32deg);animation-delay:0s"></div>
+  <div class="beam" style="width:1px;height:290px;background:linear-gradient(180deg,rgba(74,159,240,.13),transparent);transform:translate(-50%,-50%) rotate(22deg);animation-delay:.5s"></div>
+  <div class="beam" style="width:2px;height:310px;background:linear-gradient(180deg,rgba(196,32,40,.13),transparent);transform:translate(-50%,-50%) rotate(-68deg);animation-delay:1s"></div>
+  <div class="beam" style="width:1px;height:270px;background:linear-gradient(180deg,rgba(196,32,40,.1),transparent);transform:translate(-50%,-50%) rotate(56deg);animation-delay:1.5s"></div>
+
+  <!-- Brand corner (horizontal logo) -->
+  <div class="brand-corner">
+    <img src="https://i.imgur.com/GSnR39p.png" alt="Elite Call Library">
+  </div>
 
   <!-- Emblem -->
   <div class="emblem-wrap">
@@ -235,7 +162,6 @@
     <div class="ring ring-1"></div>
     <div class="corona"></div>
     <img class="emblem-img" src="https://i.imgur.com/VYJNbdd.png" alt="">
-    <div class="emblem-fallback"></div>
   </div>
 
   <!-- Wordmark -->
@@ -245,113 +171,109 @@
     <div class="tagline">Every rep &middot; Every call &middot; Rendered as a collectible</div>
   </div>
 
-  <!-- Destination tiles -->
+  <!-- Two main destination tiles -->
   <div class="dest-tiles">
     <a href="card-vault.html" class="dest-tile blue">
       <div class="dt-num">01</div>
       <div class="dt-name">Card Vault</div>
-      <div class="dt-desc">Every agent's collectible card — current and archived editions.</div>
+      <div class="dt-desc">Browse every agent's collectible performance card — current edition and full archive.</div>
       <div class="dt-cta">Enter &rarr;</div>
     </a>
     <a href="gold-calls.html" class="dest-tile gold">
       <div class="dt-num">02</div>
       <div class="dt-name">Call Samples</div>
-      <div class="dt-desc">Gold-flagged calls from this edition — tagged and ready to study.</div>
+      <div class="dt-desc">Gold-flagged calls from this edition — tagged by campaign, linked to Trellus.</div>
       <div class="dt-cta">Listen &rarr;</div>
     </a>
-    <a href="open-pack.html" class="dest-tile red">
-      <div class="dt-num">03</div>
-      <div class="dt-name">Open a Pack</div>
-      <div class="dt-desc">Crack a booster pack and discover your cards for this edition.</div>
-      <div class="dt-cta">Open &rarr;</div>
-    </a>
+  </div>
+
+  <!-- Subtle What's New hint -->
+  <div class="wnhint">
+    <a href="whats-new.html">&#9660; What&rsquo;s New This Edition</a>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker-bar">
+    <div class="ticker-label">Current Edition</div>
+    <div class="ticker-scroll">
+      <div class="ticker-inner">
+        <span class="ti" id="tickerPeriod">Jun 27 – Jul 24, 2026</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti tick-wk">Week 2 of 4 · In Progress</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti">Cards lock when the month closes and grades are final</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti">Open a Pack available inside the Card Vault</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti" id="tickerPeriod2">Jun 27 – Jul 24, 2026</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti tick-wk">Week 2 of 4 · In Progress</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti">Cards lock when the month closes and grades are final</span>
+        <span class="ti-dot">✦</span>
+        <span class="ti">Open a Pack available inside the Card Vault</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ===== TICKER ===== -->
-<div class="ticker-bar">
-  <div class="ticker-label">Current Edition</div>
-  <div class="ticker-scroll">
-    <div class="ticker-inner" id="tickerInner">
-      <span class="ti" id="tickerPeriod">Jun 27 – Jul 24, 2026</span>
-      <span class="ti-dot">✦</span>
-      <span class="ti tick-wk">Week 2 of 4 · In Progress</span>
-      <span class="ti-dot">✦</span>
-      <span class="ti">Cards lock when the month closes and grades are final</span>
-      <span class="ti-dot">✦</span>
-      <span class="ti" id="tickerPeriod2">Jun 27 – Jul 24, 2026</span>
-      <span class="ti-dot">✦</span>
-      <span class="ti tick-wk">Week 2 of 4 · In Progress</span>
-      <span class="ti-dot">✦</span>
-      <span class="ti">Cards lock when the month closes and grades are final</span>
+<!-- What's New Preview (below fold) -->
+<section class="wn-section">
+  <div class="wn-header">
+    <div class="wn-title-block">
+      <div class="sup">This Edition</div>
+      <h2>What&rsquo;s New</h2>
+      <div class="wn-divider"></div>
     </div>
+    <a href="whats-new.html" class="see-all">Full Changelog &rarr;</a>
   </div>
-</div>
 
-<!-- ===== FEATURES (below fold) ===== -->
-<section class="features">
-
-  <!-- Top Performer -->
-  <div class="feat-sect">
-    <div>
-      <div class="feat-heading">Live from this edition</div>
-      <div class="feat-title">Top Performer</div>
-      <div class="feat-div" style="margin-top:10px"></div>
-    </div>
-    <div class="top-card">
-      <div class="top-avatar"><span id="topInitials">—</span></div>
-      <div style="flex:1">
-        <div class="top-name" id="topName">Loading…</div>
-        <div class="top-sub" id="topSub">—</div>
+  <div class="cl-grid">
+    <div class="cl-item">
+      <div class="cl-dot" style="background:#4a9ff0"></div>
+      <div class="cl-body">
+        <div class="cl-feat">Cover Page</div>
+        <div class="cl-desc">New immersive library home with animated emblem, news ticker, and dedicated What's New page.</div>
       </div>
-      <div class="top-ovr">
-        <div class="n" id="topOvr">—</div>
-        <div class="l">OVR</div>
+      <span class="cl-badge" style="background:rgba(74,159,240,.12);color:#4a9ff0">New</span>
+    </div>
+    <div class="cl-item">
+      <div class="cl-dot" style="background:#4a9ff0"></div>
+      <div class="cl-body">
+        <div class="cl-feat">Compare Feature</div>
+        <div class="cl-desc">Select up to 3 cards in the Card Vault for a side-by-side stat breakdown.</div>
       </div>
+      <span class="cl-badge" style="background:rgba(74,159,240,.12);color:#4a9ff0">New</span>
     </div>
-    <div class="stat-pills">
-      <div class="stat-pill sp-blue"><div class="n" id="statCards">—</div><div class="l">Agent Cards</div></div>
-      <div class="stat-pill sp-gold"><div class="n" id="statChase">—</div><div class="l">Chase Cards</div></div>
-      <div class="stat-pill sp-green"><div class="n" id="statDivs">—</div><div class="l">Divisions</div></div>
+    <div class="cl-item">
+      <div class="cl-dot" style="background:#d8a72a"></div>
+      <div class="cl-body">
+        <div class="cl-feat">Campaign on Call Samples</div>
+        <div class="cl-desc">Cadence pulled from Trellus and displayed on every Call Sample card.</div>
+      </div>
+      <span class="cl-badge" style="background:rgba(216,167,42,.1);color:#d8a72a">Improved</span>
     </div>
-  </div>
-
-  <!-- What's New -->
-  <div class="feat-sect">
-    <div>
-      <div class="feat-heading">This Edition</div>
-      <div class="feat-title">What's New</div>
-      <div class="feat-div" style="margin-top:10px"></div>
+    <div class="cl-item">
+      <div class="cl-dot" style="background:#c42028"></div>
+      <div class="cl-body">
+        <div class="cl-feat">Foil Animations</div>
+        <div class="cl-desc">MVP and Elite tier cards now have mouse-reactive holographic foil effects.</div>
+      </div>
+      <span class="cl-badge" style="background:rgba(196,32,40,.1);color:#e02530">New</span>
     </div>
-    <div class="changelog">
-      <div class="cl-item"><span class="cl-dot" style="color:var(--blue-lt)">◆</span><span class="cl-txt">Compare feature added — select up to 3 cards for a side-by-side stat breakdown</span></div>
-      <div class="cl-item"><span class="cl-dot" style="color:var(--gold)">◆</span><span class="cl-txt">Campaign field now shown on Call Sample cards, pulled from Trellus cadence</span></div>
-      <div class="cl-item"><span class="cl-dot" style="color:#e02530">◆</span><span class="cl-txt">Foil animation active on MVP and Elite tier cards — mouse-reactive holographic effect</span></div>
-      <div class="cl-item"><span class="cl-dot" style="color:#7cb86a">◆</span><span class="cl-txt">Sched % replaces Avg Talk on card fronts — now showing percent of schedule completed</span></div>
-      <div class="cl-item"><span class="cl-dot" style="color:#9a7ab8">◆</span><span class="cl-txt">ACC now always formatted as a percentage, including archived edition cards</span></div>
-    </div>
-  </div>
-
-  <!-- About -->
-  <div class="feat-sect" style="grid-column:1/-1">
-    <div>
-      <div class="feat-heading">About the Library</div>
-      <div class="feat-title">How It Works</div>
-      <div class="feat-div" style="margin-top:10px"></div>
-    </div>
-    <div class="about-body">
-      <p>The <strong>Elite Call Library</strong> converts every rep's monthly performance data into a collectible trading card. Each metric on the card — dials, leads per hour, close rate, ACC, Sched %, and Gold Rate — is pulled automatically from Trellus and the dialer every week.</p>
-      <p>Cards stay <strong>in progress</strong> until the four-week month closes. When grades lock, the edition is finalized and moved to the Archive tab in the Card Vault. Past editions are never erased — every rep has a permanent record.</p>
-      <p><strong>Rarity is earned, not assigned.</strong> Better stats increase your odds of pulling a higher-tier card — but the final draw has an element of chance, just like opening a real pack.</p>
+    <div class="cl-item">
+      <div class="cl-dot" style="background:#7cb86a"></div>
+      <div class="cl-body">
+        <div class="cl-feat">Edition Month on Card Badges</div>
+        <div class="cl-desc">Every card now shows its edition month (e.g. MAY–JUN) for easy archival comparison.</div>
+      </div>
+      <span class="cl-badge" style="background:rgba(124,184,106,.1);color:#7cb86a">Improved</span>
     </div>
   </div>
-
 </section>
 
 <script>
 "use strict";
-
-/* ---- CSV parser ---- */
 function parseCsv(text){
   var rows=[],row=[],f='',q=false;
   for(var i=0;i<text.length;i++){var c=text[i];
@@ -365,89 +287,32 @@ function parseCsv(text){
   return rows.filter(function(r){return r.length>1&&r.some(function(c){return c!=='';});})
     .map(function(r){var o={};head.forEach(function(h,i){o[h]=(r[i]||'').trim();});return o;});
 }
-
-/* ---- Simplified composite for cover page rank ---- */
-function coverScore(r){
-  var lph=parseFloat(r.leads_per_hour)||0;
-  var cr=parseFloat(r.di_conv_rate)||0;
-  var acc=parseFloat((r.acc_display||'').replace('%',''))||0;
-  if(acc<=1&&acc>0)acc*=100;
-  return lph*0.4 + cr*0.35 + acc*0.0025;
-}
-
-/* ---- Tier weights (match card-vault) ---- */
-var TIERS=[
-  {k:'rookie',rank:1,w:46},{k:'starter',rank:2,w:30},{k:'role',rank:3,w:15},
-  {k:'mvp',rank:4,w:6},{k:'elite',rank:5,w:3}
-];
-function hashStr(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
-function rollTier(seed){
-  var rnd=mulberry32(hashStr(String(seed)));
-  var tot=TIERS.reduce(function(s,t){return s+t.w;},0),x=rnd()*tot;
-  for(var i=0;i<TIERS.length;i++){x-=TIERS[i].w;if(x<0)return TIERS[i];}
-  return TIERS[0];
-}
-
-/* ---- CSS dot fallback if logo image fails ---- */
-(function(){
-  var img=document.querySelector('.brand img');
-  if(!img)return;
-  img.addEventListener('error',function(){
-    document.getElementById('brandDotFallback').style.display='';
-    document.getElementById('brandDivFallback').style.display='';
-    document.getElementById('brandNameFallback').style.display='';
-  });
-})();
-
-/* ---- Boot: load CSV and update live sections ---- */
 function boot(){
   fetch('data/agent_feed.csv',{cache:'no-store'})
-    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+    .then(function(r){if(!r.ok)throw new Error();return r.text();})
     .then(function(text){
       var rows=parseCsv(text).filter(function(r){return r.display_name;});
       if(!rows.length)return;
-
-      /* Edition info from first row */
       var first=rows[0];
       var week=first.period_week||'?';
       var graded=(first.graded||'').toLowerCase()==='yes';
       var wkLabel=graded?'Graded':'Week '+week+' of 4 \u00b7 In Progress';
       var period=first.period_label||'';
-
-      /* Update ticker */
       document.getElementById('tickerPeriod').textContent=period;
       document.getElementById('tickerPeriod2').textContent=period;
       document.querySelectorAll('.tick-wk').forEach(function(el){el.textContent=wkLabel;});
-
-      /* Stats */
-      document.getElementById('statCards').textContent=rows.length;
-      var divs={};rows.forEach(function(r){if(r.team)divs[r.team]=1;});
-      document.getElementById('statDivs').textContent=Object.keys(divs).length;
-      var chase=rows.filter(function(r){
-        return rollTier((r.agent_id||r.display_name)+'|'+(r.period_label||'')).rank>=4;
-      }).length;
-      document.getElementById('statChase').textContent=chase;
-
-      /* Top performer */
-      rows.sort(function(a,b){return coverScore(b)-coverScore(a);});
-      var top=rows[0];
-      var parts=(top.display_name||'').split(/\s+/);
-      var initials=((parts[0]||'')[0]||'')+((parts[parts.length-1]||'')[0]||'');
-      document.getElementById('topInitials').textContent=initials.toUpperCase()||'?';
-      document.getElementById('topName').textContent=top.display_name||'—';
-      var tier=rollTier((top.agent_id||top.display_name)+'|'+(top.period_label||''));
-      var tierNames={rookie:'Rookie',starter:'Starter',role:'Role Player',mvp:'MVP',elite:'Elite'};
-      document.getElementById('topSub').textContent=(top.team||'')+(tier?' \u00b7 '+(tierNames[tier.k]||''):'');
-
-      /* Simple OVR: scale coverScore to 0-99 */
-      var sc=coverScore(top);var ovr=Math.min(99,Math.round(sc*18));
-      document.getElementById('topOvr').textContent=ovr;
-    })
-    .catch(function(){/* keep static placeholders */});
+    }).catch(function(){});
 }
-
 boot();
+
+/* ---- What's New badge on hint link ---- */
+(function(){
+  function getWeekId(){var d=new Date(),thu=new Date(d.setDate(d.getDate()-((d.getDay()+6)%7)+3)),yea=new Date(thu.getFullYear(),0,4);return thu.getFullYear()+'W'+String(1+Math.round((thu-yea)/604800000)).padStart(2,'0');}
+  if(localStorage.getItem('ec_wn_seen')!==getWeekId()){
+    var lnk=document.querySelector('.wnhint a');
+    if(lnk){var b=document.createElement('span');b.style.cssText='display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#e02530;color:#fff;font-size:8px;font-weight:700;margin-left:6px;vertical-align:middle;';b.textContent='!';lnk.appendChild(b);}
+  }
+})();
 </script>
 </body>
 </html>

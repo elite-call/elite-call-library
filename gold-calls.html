@@ -152,18 +152,15 @@
 <header class="topbar">
   <div class="topbar-in">
     <a href="index.html" class="tbrand">
-      <div class="tbrand-dot"></div>
-      <div class="tbrand-div"></div>
-      <span class="tbrand-name">Elite Call <em>Library</em></span>
+      <img src="https://i.imgur.com/GSnR39p.png" alt="Elite Call Library" style="height:24px;object-fit:contain;">
     </a>
     <nav class="tnav">
       <a href="index.html">Home</a>
       <a href="card-vault.html">Card Vault</a>
       <a href="gold-calls.html" class="active">Call Samples</a>
-      <a href="open-pack.html">Open a Pack</a>
+      <a href="whats-new.html">What's New</a>
     </nav>
     <div class="tspacer"></div>
-    <a href="open-pack.html" class="tpack">&#9733; Open a Pack</a>
   </div>
 </header>
 <div class="wrap">
@@ -312,6 +309,16 @@ fetchCsv(CSV_URL).then(function(rows){
   updateReadout(SAMPLE);
   render();
 });
+</script>
+<script>
+/* ---- What's New badge ---- */
+(function(){
+  function getWeekId(){var d=new Date(),thu=new Date(d.setDate(d.getDate()-((d.getDay()+6)%7)+3)),yea=new Date(thu.getFullYear(),0,4);return thu.getFullYear()+'W'+String(1+Math.round((thu-yea)/604800000)).padStart(2,'0');}
+  if(localStorage.getItem('ec_wn_seen')!==getWeekId()){
+    var lnk=document.querySelector('a[href="whats-new.html"]');
+    if(lnk){var b=document.createElement('span');b.style.cssText='display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#e02530;color:#fff;font-size:8px;font-weight:700;margin-left:5px;vertical-align:middle;flex-shrink:0;';b.textContent='!';lnk.appendChild(b);}
+  }
+})();
 </script>
 </body>
 </html>
