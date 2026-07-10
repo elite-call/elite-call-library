@@ -336,6 +336,27 @@
         </div>
       </div>
 
+      <!-- Rebuttal Report -->
+      <div class="side-card">
+        <div class="side-title">Missed Rebuttals &middot; Latest Report</div>
+        <div id="rebSection">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <div class="stat-pill" style="flex:1;border-color:rgba(232,72,90,.2)">
+              <div class="n" id="rebCount" style="color:#e8485a">&mdash;</div>
+              <div class="l">Missed</div>
+            </div>
+            <div class="stat-pill" style="flex:1">
+              <div class="n" id="rebReps">&mdash;</div>
+              <div class="l">Reps</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#2a3e5a;line-height:1.6" id="rebNote">
+            Enable triggers in the GS for live data (4x daily).
+          </div>
+          <a href="rebuttal-report.html" style="display:inline-block;margin-top:10px;font-family:'Oswald';font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#e8485a;border:1px solid rgba(232,72,90,.3);border-radius:6px;padding:6px 14px;transition:background .12s">View Report &rarr;</a>
+        </div>
+      </div>
+
       <!-- About the Library -->
       <div class="side-card">
         <div class="side-title">About the Library</div>
@@ -433,6 +454,17 @@ function boot(){
         document.getElementById('goldCount').textContent=g.count;
         var fr=feedMap[g.name];document.getElementById('goldSub').textContent=fr?(fr.team||''):'';}
     }
+    fetch('data/rebuttal_summary.csv',{cache:'no-store'}).then(function(r){return r.ok?r.text():Promise.reject();}).then(function(t){
+      var rows=parseCsv(t).filter(function(r){return r.missed_rebuttals||r.flagged_calls;});
+      if(!rows.length)return;
+      var r=rows[0];
+      var missed=r.missed_rebuttals||r.total_missed||'';
+      var reps=r.reps_with_misses||r.rep_count||'';
+      if(missed){document.getElementById('rebCount').textContent=missed;}
+      if(reps){document.getElementById('rebReps').textContent=reps;}
+      var date=r.report_date||r.date||'';
+      if(date)document.getElementById('rebNote').textContent='Report date: '+date;
+    }).catch(function(){});
   });
 }
 boot();
