@@ -1,78 +1,560 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<script>(function(){var s=localStorage.getItem('ec_theme');if(s&&s!=='space'){location.replace('open-pack_light.html');}})();</script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Elite Call — Open a Pack</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Roboto+Slab:ital@0;1&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="app/cards.css" />
-<link rel="stylesheet" href="app/pack.css" />
-<meta name="ext-resource-dependency" content="app/img/hail911-logo.jpg" data-resource-id="hail911" />
-<meta name="ext-resource-dependency" content="app/img/elitecall-logo.png" data-resource-id="elitecallLogo" />
+<meta charset="utf-8"/>
+<script>(function(){var s=localStorage.getItem('ec_theme');if(s&&s==='aero'){location.replace('open-pack_light.html');}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Open a Pack — Elite Call Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Anton&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    font-family: 'Oswald', sans-serif; color: #e9eefb; min-height: 100vh; overflow-x: hidden;
-    background: radial-gradient(130% 90% at 50% -5%, #16335c 0%, #0a1730 48%, #050d1f 100%);
-  }
-  header.topbar { position: sticky; top: 0; z-index: 40; background: rgba(6,15,34,.82);
-    backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,.08); }
-  .topbar-in { max-width: 1320px; margin: 0 auto; padding: 14px 22px; display: flex; align-items: center; gap: 18px; }
-  .brand { display: flex; align-items: center; gap: 12px; font-family: 'Anton', sans-serif;
-    font-size: 20px; letter-spacing: .5px; text-transform: uppercase; }
-  .brand img { height: 30px; width: auto; display: block; }
-  .brand .divider { width: 1px; height: 24px; background: rgba(255,255,255,.18); }
-  .brand .vault-word { color: var(--gold-lt); }
-  nav.tabs { display: flex; gap: 4px; margin-left: 8px; }
-  nav.tabs a { text-decoration: none; color: #b9c6e2; font-weight: 600; font-size: 14px;
-    text-transform: uppercase; letter-spacing: 1px; padding: 8px 16px; border-radius: 8px; }
-  nav.tabs a.active { background: linear-gradient(180deg, var(--gold-lt), var(--gold)); color: #0a1730; }
-  nav.tabs a:not(.active):hover { background: rgba(255,255,255,.07); color: #fff; }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;overflow-x:hidden}
+body{
+  font-family:'Nunito',sans-serif;color:#e9eefb;
+  background:radial-gradient(130% 90% at 50% -5%,#16335c 0%,#0a1730 48%,#050d1f 100%) fixed;
+  min-height:100vh;
+}
+a{text-decoration:none;color:inherit}
 
-  #root { min-height: calc(100vh - 63px); display: grid; place-items: center; padding: 20px; }
+/* Orbs */
+.orb{position:fixed;border-radius:50%;pointer-events:none;filter:blur(60px);z-index:0}
+@keyframes drift-a{0%,100%{transform:translate(0,0)}40%{transform:translate(28px,-18px)}70%{transform:translate(-16px,14px)}}
+@keyframes drift-b{0%,100%{transform:translate(0,0)}35%{transform:translate(-22px,26px)}68%{transform:translate(16px,-10px)}}
+.orb-a{width:500px;height:500px;top:-120px;left:-150px;background:radial-gradient(circle,rgba(255,255,255,.75),rgba(200,240,255,.12) 70%,transparent);animation:drift-a 20s ease-in-out infinite}
+.orb-b{width:360px;height:360px;top:35%;right:-80px;background:radial-gradient(circle,rgba(160,245,220,.68),rgba(100,210,180,.12) 65%,transparent);animation:drift-b 24s ease-in-out 4s infinite}
+.orb-c{width:300px;height:300px;bottom:10%;left:5%;background:radial-gradient(circle,rgba(255,255,255,.58),rgba(180,230,255,.1) 65%,transparent);animation:drift-a 18s ease-in-out 8s infinite}
 
-.theme-toggle{position:fixed;top:16px;right:20px;z-index:9999;
-  display:flex;align-items:center;
-  background:rgba(8,18,42,.88);border:1px solid rgba(255,255,255,.18);
-  border-radius:999px;padding:3px;
-  box-shadow:0 4px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;
-  font-family:'Oswald','Nunito',sans-serif;user-select:none;text-decoration:none}
-.theme-toggle .tt-opt{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
-  padding:5px 13px;border-radius:999px;transition:all .18s;line-height:1}
-.theme-toggle .tt-space{background:rgba(255,255,255,.14);color:#e8eef8;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
-.theme-toggle .tt-aero{color:rgba(255,255,255,.3)}
-.theme-toggle:hover .tt-aero{color:rgba(255,255,255,.55)}
+/* Nav */
+.topbar{position:sticky;top:0;z-index:40;
+  background:rgba(6,15,34,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:0 2px 18px rgba(0,0,0,.3)}
+.topbar-in{max-width:1160px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.brand img{height:22px;object-fit:contain;opacity:.9}
+.nav-tabs{display:flex;gap:3px;margin-left:8px}
+.nav-tabs a{font-family:'Nunito';font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+  padding:6px 13px;border-radius:20px;color:#4a7090;transition:background .15s,color .15s}
+.nav-tabs a.active{background:linear-gradient(160deg,rgba(242,200,64,.92),rgba(200,128,16,.88));
+  color:#5a2a00;box-shadow:0 2px 10px rgba(200,128,16,.35),inset 0 1px 0 rgba(255,255,255,.6)}
+.nav-tabs a:not(.active):hover{background:rgba(255,255,255,.6);color:#1a4a80}
+
+/* Stage */
+.stage{position:relative;z-index:1;min-height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px 80px}
+
+/* ── PACK ── */
+.pack-wrap{position:relative;cursor:pointer;user-select:none}
+@keyframes pack-float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-14px) rotate(1deg)}}
+@keyframes pack-glow{0%,100%{filter:drop-shadow(0 20px 40px rgba(80,160,220,.35)) drop-shadow(0 0 60px rgba(160,240,200,.2))}
+  50%{filter:drop-shadow(0 28px 56px rgba(80,160,220,.55)) drop-shadow(0 0 80px rgba(160,240,200,.35))}}
+.pack-wrap.idle{animation:pack-float 4s ease-in-out infinite,pack-glow 4s ease-in-out infinite}
+.pack-wrap.opening{animation:none;transition:transform .5s cubic-bezier(.2,.8,.25,1),opacity .4s;
+  transform:scale(1.08);opacity:0;pointer-events:none}
+
+.pack{width:220px;height:340px;border-radius:18px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 70% 50% at 32% 18%, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 52%),
+    radial-gradient(ellipse 45% 35% at 72% 78%, rgba(100,160,255,.25) 0%, transparent 55%),
+    linear-gradient(145deg,#1a4a8a 0%,#0f3070 20%,#0a2060 40%,#0d1a50 60%,#1a1060 80%,#160848 100%);
+  border:2px solid rgba(100,160,255,.35);
+  box-shadow:
+    inset 0 3px 8px rgba(255,255,255,.12),
+    inset 0 -4px 12px rgba(10,20,80,.5),
+    0 24px 60px rgba(10,40,140,.6),
+    0 4px 14px rgba(0,0,0,.4)}
+
+/* Holographic shimmer overlay */
+.pack-foil{position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  background:linear-gradient(120deg,
+    rgba(255,80,120,.25) 0%,rgba(255,210,90,.28) 18%,rgba(120,255,170,.22) 35%,
+    rgba(90,200,255,.25) 52%,rgba(190,120,255,.22) 68%,rgba(255,80,120,.2) 85%,transparent 100%);
+  mix-blend-mode:screen;opacity:.7}
+@keyframes foil-anim{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.pack-foil{background-size:300% 300%;animation:foil-anim 5s ease-in-out infinite}
+
+/* Pack tear strip */
+.pack-tear{position:absolute;top:72px;left:0;right:0;height:22px;
+  background:rgba(255,255,255,.18);border-top:1.5px dashed rgba(255,255,255,.6);border-bottom:1.5px dashed rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center;gap:4px;z-index:2}
+.pack-tear span{font-size:7px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.pack-tear-arrow{font-size:9px;color:rgba(255,255,255,.6)}
+
+/* Pack top section */
+.pack-top{position:absolute;top:0;left:0;right:0;height:94px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);z-index:3}
+.pack-logo{height:28px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
+.pack-edition{font-size:8px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(180,210,255,.85)}
+
+/* Pack body */
+.pack-body{position:absolute;top:94px;left:0;right:0;bottom:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:3}
+.pack-emblem{width:72px;height:72px;border-radius:50%;
+  background:
+    radial-gradient(ellipse 65% 50% at 35% 22%, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 52%),
+    radial-gradient(circle at 50% 50%, rgba(100,160,255,.3) 0%, rgba(40,80,200,.4) 40%, rgba(10,20,100,.5) 100%);
+  border:2px solid rgba(100,160,255,.45);
+  box-shadow:0 4px 20px rgba(10,40,160,.5),inset 0 2px 4px rgba(255,255,255,.12);
+  display:grid;place-items:center}
+.pack-emblem img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(0,0,0,.25))}
+.pack-cta-text{font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;color:rgba(200,225,255,.95);text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.pack-count{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(150,190,255,.55)}
+
+/* Hover state */
+.pack-wrap:hover .pack{box-shadow:
+  inset 0 3px 8px rgba(255,255,255,.8),
+  inset 0 -4px 12px rgba(30,80,160,.35),
+  0 32px 72px rgba(40,100,200,.55),
+  0 6px 20px rgba(0,0,0,.18)}
+
+/* ── REVEAL STAGE ── */
+.reveal-stage{display:none;flex-direction:column;align-items:center;gap:32px}
+.reveal-stage.active{display:flex}
+.cards-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.reveal-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.btn-primary{font-family:'Nunito';font-weight:900;font-size:12px;letter-spacing:.8px;text-transform:uppercase;
+  padding:12px 28px;border-radius:999px;border:none;cursor:pointer;
+  background:linear-gradient(160deg,rgba(242,200,64,.92),rgba(200,128,16,.88));
+  color:#5a2a00;box-shadow:0 3px 14px rgba(200,128,16,.35),inset 0 1px 0 rgba(255,255,255,.6)}
+.btn-primary:hover{filter:brightness(1.07)}
+.btn-secondary{font-family:'Nunito';font-weight:800;font-size:12px;letter-spacing:.8px;text-transform:uppercase;
+  padding:12px 28px;border-radius:999px;cursor:pointer;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+  color:#b9c6e2;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.btn-secondary:hover{background:rgba(255,255,255,.12);color:#fff}
+
+/* Reveal title */
+.reveal-title{font-family:'Anton';font-size:32px;text-transform:uppercase;letter-spacing:.5px;
+  background:linear-gradient(160deg,#a0c8ff,#4a9ff0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── CARD STYLES (Aero light — mirrors card-vault_light) ── */
+@keyframes card-enter{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes foil-sweep{0%,100%{background-position:0% 0%}50%{background-position:100% 100%}}
+
+.card{width:240px;aspect-ratio:300/420;perspective:1400px;cursor:pointer;
+  animation:card-enter .5s cubic-bezier(.2,.8,.25,1) both;
+  animation-delay:calc(var(--ci,0)*120ms);
+  transition:transform .22s ease}
+.card:hover{transform:translateY(-6px)}
+.flip{position:relative;width:100%;height:100%;
+  transition:transform .65s cubic-bezier(.2,.8,.25,1);transform-style:preserve-3d}
+.card.flipped .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 80% 50% at 40% 18%, rgba(255,255,255,.1) 0%, transparent 55%),
+    linear-gradient(165deg,#1e3a6a 0%,#162e58 30%,#0e2040 65%,#080e28 100%);
+  border:1px solid rgba(80,140,255,.3);
+  box-shadow:0 16px 44px -10px rgba(10,40,160,.55),0 4px 12px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.07)}
+.back-f{transform:rotateY(180deg)}
+.inner{position:absolute;inset:8px;border:1px solid rgba(255,255,255,.6);border-radius:10px;
+  padding:9px 10px;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))}
+
+/* Foil */
+.foil{position:absolute;inset:0;pointer-events:none;border-radius:14px;mix-blend-mode:screen;background-size:250% 250%;opacity:0}
+.card[data-rank="4"] .foil{background:linear-gradient(125deg,transparent 20%,rgba(255,220,120,.55) 45%,rgba(255,255,200,.38) 52%,transparent 72%);opacity:.75;animation:foil-sweep 5.5s ease-in-out infinite}
+.card[data-rank="4"] .face{border-color:rgba(242,200,64,.8)}
+.card[data-rank="5"] .foil{background:linear-gradient(120deg,rgba(255,80,120,.45),rgba(255,210,90,.45),rgba(120,255,170,.4),rgba(90,200,255,.4),rgba(190,120,255,.4));opacity:.82;animation:foil-sweep 5s ease-in-out infinite}
+.card[data-rank="5"] .face{border-color:rgba(242,200,64,.9);box-shadow:0 16px 44px -10px rgba(40,100,180,.35),0 0 24px -6px rgba(242,200,64,.2),inset 0 2px 0 rgba(255,255,255,.9)}
+
+/* Front elements */
+.top{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.stars{font-size:10px;letter-spacing:1px}
+.stars .s{color:#f2c840}.stars .o{color:rgba(120,160,220,.2)}
+.setbadge{font-family:'Anton';font-size:10px;letter-spacing:.5px;text-transform:uppercase;
+  color:#5a2a00;background:linear-gradient(160deg,rgba(242,200,64,.92),rgba(200,128,16,.88));
+  padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.5);white-space:nowrap;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.cardno{font-size:9px;font-weight:600;color:rgba(60,100,150,.55)}
+.portrait{position:relative;margin-top:7px;aspect-ratio:1/.82;border-radius:8px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.7);
+  background:
+    radial-gradient(rgba(255,255,255,.08) 1px,transparent 1.4px) 0 0/6px 6px,
+    radial-gradient(ellipse 80% 60% at 38% 22%,rgba(255,255,255,.08) 0%,transparent 52%),
+    radial-gradient(115% 120% at 50% 8%,#1a3a7a 0%,#0f2560 45%,#080e38 100%);
+  background-color:#0f2050;box-shadow:inset 0 2px 8px rgba(0,0,0,.4)}
+.monogram{position:absolute;inset:0;display:grid;place-items:center;font-family:'Anton';
+  font-size:58px;color:#fff;text-shadow:0 4px 14px rgba(20,80,160,.4),0 1px 0 rgba(255,255,255,.8)}
+.teamtag{position:absolute;left:6px;bottom:6px;font-size:8px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;color:#fff;background:rgba(20,60,120,.55);backdrop-filter:blur(4px);
+  padding:1px 7px;border-radius:4px;border:1px solid rgba(255,255,255,.4)}
+.cobadge{position:absolute;left:6px;top:6px;font-size:8px;font-weight:800;color:#fff;
+  background:#c2402f;padding:1px 6px;border-radius:4px;letter-spacing:.5px}
+.grade{position:absolute;right:6px;top:6px;text-align:center;
+  background:rgba(8,18,42,.82);backdrop-filter:blur(6px);
+  border:2px solid var(--gg,#c88010);border-radius:7px;padding:2px 7px;min-width:36px;
+  box-shadow:0 2px 8px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.95)}
+.grade .g{font-family:'Anton';font-size:17px;line-height:1;color:var(--gg,#c88010)}
+.grade .gl{font-size:5.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gg,#c88010);opacity:.9}
+.wip{position:absolute;right:6px;top:6px;background:rgba(8,18,42,.82);backdrop-filter:blur(6px);
+  border:1px dashed #c88010;border-radius:6px;padding:3px 7px;text-align:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.9)}
+.wip .g{font-family:'Anton';font-size:10px;color:#c88010;line-height:1}
+.wip .gl{font-size:5.5px;letter-spacing:1px;text-transform:uppercase;color:#a07020;margin-top:1px;font-weight:800}
+.namebar{margin-top:8px;text-align:center;border-radius:7px;padding:6px 7px;
+  border:1px solid rgba(255,255,255,.1);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+  backdrop-filter:blur(6px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.name{font-family:'Anton';color:#e8eef8;font-size:18px;line-height:1;letter-spacing:.5px;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+.tiles{margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.tile{background:linear-gradient(180deg,rgba(255,255,255,.68),rgba(210,235,255,.45));
+  border-radius:7px;padding:6px 2px 5px;text-align:center;
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 1px 3px rgba(40,100,180,.08)}
+.tile .v{font-family:'Anton';font-size:16px;line-height:1;color:#1a3a6e}
+.tile .v small{font-size:9px;opacity:.75}
+.tile .l{font-size:7px;letter-spacing:.4px;text-transform:uppercase;color:#6a90b8;margin-top:2px;font-weight:800}
+.tile.seecoach .v{font-size:10px;color:#f2c840}
+.tile.muted .v{color:#3e5270}
+.foot{margin-top:auto;padding-top:8px;display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid rgba(255,255,255,.1);font-size:8px;letter-spacing:.5px;
+  text-transform:uppercase;color:rgba(100,150,220,.4);font-weight:800}
+.foot .logo-txt{display:flex;align-items:center;gap:5px;font-weight:800;color:#5a7ab8}
+.foot .rar{font-weight:800;color:rgba(100,150,220,.4)}
+.card[data-rank="4"] .foot .rar{color:#c88010}
+.card[data-rank="5"] .foot .rar{color:#f2c840}
+
+/* Card back */
+.back-inner{position:absolute;inset:8px;border:1px solid rgba(255,255,255,.6);border-radius:10px;
+  padding:9px 10px;display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02))}
+.bhead{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.bname{font-family:'Anton';font-size:15px;text-transform:uppercase;color:#1a3060;line-height:1}
+.bsub{font-size:8px;letter-spacing:.5px;text-transform:uppercase;color:#6a90b8;margin-top:2px;font-weight:700}
+.bovr{font-family:'Anton';font-size:22px;color:#1a60cc;line-height:1;text-align:right}
+.bovr small{display:block;font-size:6px;letter-spacing:1.2px;color:#6a90b8;font-weight:800}
+.sect{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:#c88010;
+  margin:9px 0 4px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.5);padding-bottom:2px}
+.bar{display:flex;align-items:center;gap:7px;margin:4px 0;font-size:9px}
+.bar .bl{width:56px;text-transform:uppercase;letter-spacing:.3px;color:#6a90b8;font-weight:700}
+.bar .bt{flex:1;height:5px;border-radius:3px;background:rgba(80,140,200,.15);overflow:hidden}
+.bar .bf{height:100%;background:linear-gradient(90deg,#4a9ff0,#1a60cc)}
+.bar .bn{width:40px;text-align:right;font-weight:800;color:#1a3060}
+.muted-note{font-size:9px;color:#8aaac8;font-style:italic;font-weight:600}
+
+/* Rarity badge (new card reveal) */
+.rarity-flash{position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  display:grid;place-items:center;z-index:10;opacity:0}
+@keyframes rarity-reveal{0%{opacity:1;transform:scale(.8)}60%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1)}}
+.rarity-flash.show{animation:rarity-reveal 1s cubic-bezier(.2,.8,.25,1) forwards}
+.rarity-flash-inner{font-family:'Anton';font-size:22px;text-transform:uppercase;letter-spacing:1px;
+  padding:10px 24px;border-radius:999px;
+  background:rgba(8,18,42,.92);backdrop-filter:blur(10px);
+  box-shadow:0 4px 20px rgba(10,40,160,.6),inset 0 1px 0 rgba(255,255,255,.1)}
+.rf-rookie{color:#6a9ab8}
+.rf-starter{color:#4a7090}
+.rf-role{color:#2a6080}
+.rf-mvp{color:#c88010}
+.rf-elite{color:#8830d8}
+
+/* Loading */
+.loading-msg{font-family:'Nunito';font-size:14px;font-weight:700;color:#4a6a9a;text-align:center;padding:40px}
 </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-in">
-      <div class="brand"><img src="app/img/elitecall-logo.png" alt="Elite Call" /><span class="divider"></span><span class="vault-word">Card Vault</span></div>
-      <nav class="tabs">
-        <a href="index.html">Card Vault</a>
-        <a href="open-pack.html" class="active">Open a Pack</a>
-      </nav>
+
+<div class="orb orb-a"></div>
+<div class="orb orb-b"></div>
+<div class="orb orb-c"></div>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a href="index.html" class="brand"><img src="https://i.imgur.com/GSnR39p.png" alt="Elite Call Library"></a>
+    <nav class="nav-tabs">
+      <a href="index.html">Home</a>
+      <a href="card-vault.html">Card Vault</a>
+      <a href="gold-calls.html">Call Samples</a>
+      <a href="whats-new.html">What's New</a>
+    </nav>
+  </div>
+</header>
+
+<div class="stage" id="stage">
+
+  <!-- Pack idle state -->
+  <div id="packWrap" class="pack-wrap idle" onclick="openPack()">
+    <div class="pack">
+      <div class="pack-foil"></div>
+      <div class="pack-tear">
+        <span class="pack-tear-arrow">◀</span>
+        <span>Tear here</span>
+        <span class="pack-tear-arrow">▶</span>
+      </div>
+      <div class="pack-top">
+        <img class="pack-logo" src="https://i.imgur.com/GSnR39p.png" alt="Elite Call">
+        <div class="pack-edition" id="packEdition">JUN–JUL 2026</div>
+      </div>
+      <div class="pack-body">
+        <div class="pack-emblem">
+          <img src="https://i.imgur.com/VYJNbdd.png" alt="">
+        </div>
+        <div class="pack-cta-text">Click to Open</div>
+        <div class="pack-count" id="packCount">5 Cards Inside</div>
+      </div>
     </div>
-  </header>
-  <div id="root"></div>
+  </div>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <!-- Reveal stage -->
+  <div id="revealStage" class="reveal-stage">
+    <div class="reveal-title" id="revealTitle">Your Pack</div>
+    <div class="cards-row" id="cardsRow"></div>
+    <div class="reveal-cta">
+      <button class="btn-primary" onclick="openPack(); resetPack()">Open Another</button>
+      <button class="btn-secondary" onclick="location.href='card-vault.html'">View Card Vault</button>
+    </div>
+  </div>
 
-  <script src="app/agent_feed_data.js"></script>
-  <script src="app/data.js"></script>
-  <script src="app/baseset.js"></script>
-  <script src="app/trellus.js"></script>
-  <script type="text/babel" src="app/tweaks-panel.jsx"></script>
-  <script type="text/babel" src="app/cards.jsx"></script>
-  <script type="text/babel" src="app/pack.jsx"></script>
+  <div class="loading-msg" id="loadingMsg" style="display:none">Loading roster…</div>
+
+</div>
+
+<script>
+"use strict";
+
+var FEED_URL = 'data/agent_feed.csv';
+var roster = [];
+var periodLabel = 'JUN–JUL 2026';
+
+/* ── CSV ── */
+function parseCsv(t){
+  var rows=[],row=[],f='',q=false;
+  for(var i=0;i<t.length;i++){var c=t[i];
+    if(q){if(c==='"'&&t[i+1]==='"'){f+='"';i++;}else if(c==='"')q=false;else f+=c;}
+    else if(c==='"')q=true;
+    else if(c===','){row.push(f);f='';}
+    else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}
+    else if(c!=='\r')f+=c;}
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  var h=rows.shift().map(function(x){return x.trim();});
+  return rows.filter(function(r){return r.length>1&&r.some(function(c){return c!=='';});})
+    .map(function(r){var o={};h.forEach(function(k,i){o[k]=(r[i]||'').trim();});return o;});
+}
+
+/* ── Rarity ── */
+var TIERS=[{k:'rookie',name:'Rookie',rank:1,w:46},{k:'starter',name:'Starter',rank:2,w:30},
+  {k:'role',name:'Role Player',rank:3,w:15},{k:'mvp',name:'MVP',rank:4,w:6},{k:'elite',name:'Elite',rank:5,w:3}];
+function hashStr(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function rollTier(seed){
+  // Fresh random roll each open (use Date.now to vary)
+  var rnd=mulberry32(hashStr(String(seed)+String(Date.now()%99999)));
+  var tot=TIERS.reduce(function(s,t){return s+t.w;},0),x=rnd()*tot;
+  for(var i=0;i<TIERS.length;i++){x-=TIERS[i].w;if(x<0)return TIERS[i];}
+  return TIERS[0];
+}
+var TIER_STARS={rookie:1,starter:2,role:3,mvp:4,elite:5};
+
+/* ── Score ── */
+function coverScore(r){
+  var lph=parseFloat(r.leads_per_hour)||0;
+  var cr=parseFloat(r.di_conv_rate)||0;
+  var acc=parseFloat((r.acc_display||'').replace('%',''))||0;
+  if(acc<=1&&acc>0)acc*=100;
+  return lph*0.4+cr*0.35+acc*0.0025;
+}
+
+/* ── Helpers ── */
+function fmtVal(v,key){
+  if(v===''||v===null||v===undefined)return '—';
+  if(key==='sched_pct'||key==='acc_display'){
+    var n=parseFloat(v);if(isNaN(n))return '—';
+    if(n>0&&n<=1)n=Math.round(n*100);
+    else n=Math.round(n);
+    return n+'%';
+  }
+  if(key==='di_conv_rate'){var n2=parseFloat(v);return isNaN(n2)?'—':Math.round(n2)+'%';}
+  if(key==='gold_rate'){var n3=parseFloat(v);return isNaN(n3)?'—':(n3>1?n3.toFixed(1):+(n3*100).toFixed(1))+'%';}
+  var f=parseFloat(v);return isNaN(f)?v:(Number.isInteger(f)?f:f.toFixed(1));
+}
+function stars(n){var s='';for(var i=0;i<5;i++)s+='<span class="'+(i<n?'s':'o')+'">★</span>';return s;}
+function initials(name){var p=(name||'').split(/\s+/);return ((p[0]||'')[0]||'')+((p[p.length-1]||'')[0]||'');}
+
+/* ── Card builder ── */
+var STATS=[
+  {key:'leads_per_hour',label:'Leads/Hr'},
+  {key:'dials',label:'Dials'},
+  {key:'sched_pct',label:'Sched %'},
+  {key:'acc_display',label:'ACC'},
+  {key:'di_conv_rate',label:'Close %'},
+  {key:'gold_rate',label:'Gold Rate'},
+];
+var GRADE_COLORS={'A+':'#1a8050','A':'#1a8050','A-':'#1a8050','B+':'#4a9ff0','B':'#4a9ff0','B-':'#4a9ff0','C+':'#c88010','C':'#c88010','C-':'#c88010','D':'#c42028','F':'#c42028'};
+
+function buildCard(rep, tier, ci) {
+  var rank = tier.rank;
+  var sc = coverScore(rep);
+  var ovr = Math.min(99, Math.round(sc * 18));
+  var graded = (rep.graded||'').toLowerCase() === 'yes';
+  var teamStr = rep.team || '';
+  var isHail = teamStr === 'HAIL911';
+  var mono = initials(rep.display_name);
+  var grade = rep.grade || '';
+  var gradeColor = GRADE_COLORS[grade] || '#c88010';
+  var numStr = rep.card_number ? ('#'+String(rep.card_number).padStart(3,'0')+' / '+String(rep.total_cards||'?').padStart(3,'0')) : '';
+  var period = rep.period_label || periodLabel;
+  var tierNames = {rookie:'Rookie',starter:'Starter',role:'Role Player',mvp:'MVP',elite:'Elite'};
+  var rarLabel = tierNames[tier.k] || tier.k;
+
+  var tilesHtml = STATS.map(function(s){
+    var val = fmtVal(rep[s.key], s.key);
+    var cls = val==='—'?'tile muted':'tile';
+    return '<div class="'+cls+'"><div class="v">'+val+'</div><div class="l">'+s.label+'</div></div>';
+  }).join('');
+
+  var frontGradeHtml = '';
+  if(graded && grade){
+    frontGradeHtml = '<div class="grade" style="--gg:'+gradeColor+'"><div class="g">'+grade+'</div><div class="gl">Grade</div></div>';
+  } else {
+    var wk = rep.period_week||'?';
+    frontGradeHtml = '<div class="wip"><div class="g">Wk '+wk+'/4</div><div class="gl">In Progress</div></div>';
+  }
+
+  var backBars = STATS.map(function(s){
+    var val = fmtVal(rep[s.key], s.key);
+    var raw = parseFloat(rep[s.key])||0;
+    var maxes = {leads_per_hour:2.5,dials:300,sched_pct:100,acc_display:100,di_conv_rate:100,gold_rate:10};
+    var pct = Math.min(100, Math.round(raw / (maxes[s.key]||10) * 100));
+    if(val==='—') return '<div class="bar"><div class="bl">'+s.label+'</div><div class="bt"><div class="bf" style="width:0"></div></div><div class="bn">—</div></div>';
+    return '<div class="bar"><div class="bl">'+s.label+'</div><div class="bt"><div class="bf" style="width:'+pct+'%"></div></div><div class="bn">'+val+'</div></div>';
+  }).join('');
+
+  var flashCls = 'rf-'+tier.k;
+
+  var html = '<div class="card" data-rank="'+rank+'" style="--ci:'+ci+'" onclick="flipCard(this)">'
+    + '<div class="flip">'
+    // FRONT
+    + '<div class="face">'
+    + '<div class="foil"></div>'
+    + '<div class="rarity-flash show"><div class="rarity-flash-inner '+flashCls+'">'+rarLabel+'</div></div>'
+    + '<div class="inner">'
+    + '<div class="top">'
+    + '<div class="stars">'+stars(TIER_STARS[tier.k]||1)+'</div>'
+    + '<div class="setbadge">'+period+'</div>'
+    + '<div class="cardno">'+numStr+'</div>'
+    + '</div>'
+    + '<div class="portrait">'
+    + '<div class="monogram">'+mono+'</div>'
+    + (isHail?'<div class="cobadge">HAIL911</div>':'')
+    + '<div class="teamtag">'+teamStr+'</div>'
+    + frontGradeHtml
+    + '</div>'
+    + '<div class="namebar"><div class="name">'+rep.display_name+'</div></div>'
+    + '<div class="tiles">'+tilesHtml+'</div>'
+    + '<div class="foot">'
+    + '<div class="logo-txt">Elite Call</div>'
+    + '<div class="rar">'+rarLabel+'</div>'
+    + '</div>'
+    + '</div>'  // inner
+    + '</div>'  // face front
+    // BACK
+    + '<div class="face back-f">'
+    + '<div class="foil"></div>'
+    + '<div class="back-inner">'
+    + '<div class="bhead">'
+    + '<div><div class="bname">'+rep.display_name+'</div><div class="bsub">'+teamStr+'</div></div>'
+    + '<div class="bovr">'+ovr+'<small>OVR</small></div>'
+    + '</div>'
+    + '<div class="sect">Stats</div>'
+    + backBars
+    + '</div>'
+    + '</div>'  // face back
+    + '</div>'  // flip
+    + '</div>';  // card
+  return html;
+}
+
+function flipCard(el){el.classList.toggle('flipped');}
+
+/* ── Pack open ── */
+var isOpen = false;
+function openPack(){
+  if(isOpen) return;
+  if(roster.length === 0){ document.getElementById('loadingMsg').style.display='block'; return; }
+  isOpen = true;
+
+  var packWrap = document.getElementById('packWrap');
+  var revealStage = document.getElementById('revealStage');
+  var cardsRow = document.getElementById('cardsRow');
+  var revealTitle = document.getElementById('revealTitle');
+
+  // Animate pack away
+  packWrap.classList.remove('idle');
+  packWrap.classList.add('opening');
+
+  setTimeout(function(){
+    packWrap.style.display = 'none';
+
+    // Pick 5 random reps
+    var pool = roster.slice();
+    var picks = [];
+    for(var i=0; i<5 && pool.length; i++){
+      var idx = Math.floor(Math.random() * pool.length);
+      picks.push(pool.splice(idx,1)[0]);
+    }
+
+    // Build cards
+    cardsRow.innerHTML = '';
+    var hasHolo = false;
+    picks.forEach(function(rep, i){
+      var tier = rollTier(rep.display_name + i + Date.now());
+      if(tier.rank >= 4) hasHolo = true;
+      cardsRow.innerHTML += buildCard(rep, tier, i);
+    });
+
+    revealTitle.textContent = hasHolo ? '✦ Rare Pull!' : 'Your Pack';
+    revealStage.classList.add('active');
+  }, 500);
+}
+
+function resetPack(){
+  isOpen = false;
+  var packWrap = document.getElementById('packWrap');
+  var revealStage = document.getElementById('revealStage');
+  packWrap.style.display = '';
+  packWrap.classList.remove('opening');
+  packWrap.classList.add('idle');
+  revealStage.classList.remove('active');
+}
+
+/* ── Fallback demo roster ── */
+var DEMO_ROSTER = [
+  {display_name:'Adrian Diaz',team:'FLORIDA',leads_per_hour:'1.8',dials:'210',sched_pct:'82',acc_display:'88%',di_conv_rate:'28',gold_rate:'2.1',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Gina Hamilton',team:'ILLINOIS',leads_per_hour:'2.1',dials:'240',sched_pct:'91',acc_display:'91%',di_conv_rate:'34',gold_rate:'3.2',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Joey Myatt',team:'ILLINOIS',leads_per_hour:'2.2',dials:'220',sched_pct:'88',acc_display:'88%',di_conv_rate:'32',gold_rate:'3.0',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Ryan Marcus',team:'FLORIDA',leads_per_hour:'1.5',dials:'195',sched_pct:'76',acc_display:'84%',di_conv_rate:'24',gold_rate:'1.8',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Kraig Frindt',team:'HAIL911',leads_per_hour:'1.9',dials:'230',sched_pct:'85',acc_display:'86%',di_conv_rate:'29',gold_rate:'2.4',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Kenna Anglea',team:'ILLINOIS',leads_per_hour:'2.0',dials:'215',sched_pct:'89',acc_display:'90%',di_conv_rate:'31',gold_rate:'2.8',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Hunter Pollard',team:'FLORIDA',leads_per_hour:'1.6',dials:'200',sched_pct:'79',acc_display:'83%',di_conv_rate:'26',gold_rate:'2.0',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+  {display_name:'Grace Coss',team:'ILLINOIS',leads_per_hour:'2.3',dials:'250',sched_pct:'93',acc_display:'92%',di_conv_rate:'36',gold_rate:'3.5',graded:'no',period_week:'2',period_label:'JUN–JUL 2026'},
+];
+
+/* ── Boot ── */
+function boot(){
+  var ctrl = new AbortController();
+  var tid = setTimeout(function(){ ctrl.abort(); }, 5000);
+  fetch(FEED_URL, {cache:'no-store', signal: ctrl.signal})
+    .then(function(r){ clearTimeout(tid); return r.ok ? r.text() : Promise.reject(); })
+    .then(function(t){
+      var rows = parseCsv(t).filter(function(r){ return r.display_name; });
+      if(rows.length){
+        roster = rows;
+        var first = roster[0];
+        periodLabel = first.period_label || periodLabel;
+        document.getElementById('packEdition').textContent = periodLabel;
+        document.getElementById('packCount').textContent = '5 Cards · ' + roster.length + ' in Roster';
+      }
+    })
+    .catch(function(){
+      clearTimeout(tid);
+      if(!roster.length) roster = DEMO_ROSTER;
+    });
+  // Show pack immediately — don't wait for fetch
+  roster = DEMO_ROSTER;
+}
+boot();
+</script>
+<style>.theme-toggle{position:fixed;top:16px;right:20px;z-index:9999;display:flex;align-items:center;background:rgba(8,18,42,.88);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:3px;box-shadow:0 4px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;font-family:'Nunito',sans-serif;user-select:none}.theme-toggle .tt-opt{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;padding:5px 13px;border-radius:999px;transition:all .18s;line-height:1}.theme-toggle .tt-space{background:rgba(255,255,255,.14);color:#e8eef8;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}.theme-toggle .tt-aero{color:rgba(255,255,255,.3)}.theme-toggle:hover .tt-aero{color:rgba(255,255,255,.55)}</style>
 <div class="theme-toggle" onclick="(function(){localStorage.setItem('ec_theme','aero');location.replace('open-pack_light.html');})()"><div class="tt-opt tt-space">Space</div><div class="tt-opt tt-aero">Aero</div></div>
 </body>
 </html>
