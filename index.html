@@ -154,6 +154,24 @@
   .node-roi{left:700px;top:200px;--nd:.24s}
   .node-ecu{left:700px;top:510px;--nd:.28s}
 
+  /* ---- ECU — mint active sphere ---- */
+  a.node-ecu .node-inner{
+    background:radial-gradient(circle at 50% 50%,#78d8b0 0%,#38a878 45%,#1a6848 100%);
+    box-shadow:0 10px 40px rgba(56,168,120,.55),0 3px 10px rgba(0,0,0,.4),0 0 0 1.5px rgba(255,255,255,.25)}
+  a.node-ecu .node-num{color:rgba(180,255,220,.9);opacity:.85}
+  a.node-ecu .node-label{color:#fff;font-size:15px;font-weight:700;letter-spacing:1.2px;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+  @keyframes ecu-mint-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .node-ecu-ring{position:absolute;inset:-7px;border-radius:50%;border:1.5px solid transparent;border-top-color:rgba(140,255,200,.7);border-right-color:rgba(140,255,200,.18);pointer-events:none;opacity:0;transition:opacity .2s}
+  a.node-ecu:hover .node-ecu-ring{opacity:1;animation:ecu-mint-spin 2.8s linear infinite}
+  a.node-ecu:hover .node-inner{transform:scale(1.1)}
+  @keyframes ecu-mint-glow{
+    0%,100%{box-shadow:0 10px 40px rgba(56,168,120,.55),0 3px 10px rgba(0,0,0,.4),0 0 0 1.5px rgba(255,255,255,.25)}
+    50%{box-shadow:0 14px 54px rgba(56,168,120,.85),0 3px 10px rgba(0,0,0,.4),0 0 0 1.5px rgba(255,255,255,.4),0 0 28px rgba(100,240,180,.3)}}
+  a.node-ecu:hover .node-inner{animation:ecu-mint-glow 2s ease-in-out infinite}
+  @keyframes hit-ecu{0%,100%{box-shadow:0 10px 40px rgba(56,168,120,.55),0 3px 10px rgba(0,0,0,.4),0 0 0 1.5px rgba(255,255,255,.25)}50%{box-shadow:0 14px 54px rgba(56,168,120,.9),0 3px 10px rgba(0,0,0,.4),0 0 0 1.5px rgba(255,255,255,.4),0 0 28px rgba(100,240,180,.35)}}
+  .node-ecu.rh .node-inner{animation:hit-ecu .7s ease-out!important}
+  .node-ecu.rh .node-label{opacity:1!important}
+
   /* ---- What's New hint ---- */
   .wn-hint{margin-top:18px;font-size:10px;letter-spacing:1.8px;text-transform:uppercase;
     animation:fade-in 1s ease .9s both}
@@ -238,7 +256,7 @@
       <!-- Coming soon: subtle static dashes -->
       <line x1="430" y1="360" x2="430" y2="80"  stroke="rgba(255,255,255,.07)" stroke-width="1"   stroke-dasharray="3 11"/>
       <line x1="430" y1="360" x2="700" y2="200" stroke="rgba(255,255,255,.07)" stroke-width="1"   stroke-dasharray="3 11"/>
-      <line x1="430" y1="360" x2="700" y2="510" stroke="rgba(255,255,255,.07)" stroke-width="1"   stroke-dasharray="3 11"/>
+      <line x1="430" y1="360" x2="700" y2="510" stroke="rgba(100,210,160,.28)" stroke-width="1.5" stroke-dasharray="5 9" style="animation:dash-flow 2.0s linear infinite"/>
     </svg>
 
     <!-- CENTER EMBLEM -->
@@ -296,14 +314,14 @@
       </div>
     </div>
 
-    <!-- ELITE CALL UNIVERSITY — grey, lower right -->
-    <div class="node node-soon node-ecu">
+    <!-- ELITE CALL UNIVERSITY -->
+    <a class="node node-active node-ecu" href="elite-call-university.html" style="text-decoration:none;">
       <div class="node-inner">
-        <div class="tooltip">Coming Soon</div>
+        <div class="node-ecu-ring"></div>
+        <div class="node-num">ECU</div>
         <div class="node-label">Elite Call<br>University</div>
-        <div class="node-sub">Coming Soon</div>
       </div>
-    </div>
+    </a>
 
   </div><!-- /hub-wrap -->
 

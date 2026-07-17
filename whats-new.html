@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
+<script>(function(){var s=localStorage.getItem('ec_theme');if(s&&s!=='space'){location.replace('whats-new_light.html');}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>What's New — Elite Call Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -124,6 +125,19 @@
     border-top:1px solid var(--line);margin-top:14px}
   .hail911-row img{height:16px;opacity:.6}
   .hail911-row span{font-size:10px;color:#2a3e5a}
+
+.theme-toggle{position:fixed;top:16px;right:20px;z-index:9999;
+  display:flex;align-items:center;
+  background:rgba(8,18,42,.88);border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;padding:3px;
+  box-shadow:0 4px 18px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;
+  font-family:'Oswald','Nunito',sans-serif;user-select:none}
+.theme-toggle .tt-opt{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  padding:5px 13px;border-radius:999px;transition:all .18s;line-height:1}
+.theme-toggle .tt-space{background:rgba(255,255,255,.14);color:#e8eef8;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+.theme-toggle .tt-aero{color:rgba(255,255,255,.3)}
+.theme-toggle:hover .tt-aero{color:rgba(255,255,255,.55)}
 </style>
 </head>
 <body>
@@ -475,5 +489,6 @@ boot();
   localStorage.setItem('ec_wn_seen',getWeekId());
 })();
 </script>
+<div class="theme-toggle" onclick="(function(){localStorage.setItem('ec_theme','aero');location.replace('whats-new_light.html');})()"><div class="tt-opt tt-space">Space</div><div class="tt-opt tt-aero">Aero</div></div>
 </body>
 </html>
