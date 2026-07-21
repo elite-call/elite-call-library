@@ -1,8 +1,26 @@
 {
   "date": "2026-07-21",
-  "total_missed": 82,
-  "total_flagged": 82,
+  "total_missed": 84,
+  "total_flagged": 84,
   "missed_calls": [
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Marc Adelberg",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a5f973bb1a0dd1b88d3",
+      "transcript": "The agent missed a critical rebuttal opportunity when the customer requested an email; instead of pivoting or restating value, the agent immediately conceded with \"Hey, yeah, no worries. Okay, I'll send that over.\""
+    },
+    {
+      "rep_name": "Erika Carranza",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G KCI HS26C PRIORITY TIERS",
+      "customer": "Steve Lauritsen",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a5f97387c58d33f658c",
+      "transcript": "The customer provided a STALL_BUSY_LATER objection (\"I am actually out on the road for the next couple days\"), and the agent's very next response was a compliance sign-off (\"Oh, okay. Yeah, no problem... have a good rest of your day\") without any attempt to offer a callback or future date."
+    },
     {
       "rep_name": "Erika Carranza",
       "team": "ILLINOIS",
@@ -337,15 +355,6 @@
       "transcript": "The customer provided a script-critical objection (\"everything is working fine\"), and the agent's very next response was a submissive compliance phrase (\"Yeah, no problem\") followed by a weak question as the customer was already ending the call."
     },
     {
-      "rep_name": "Ryan Marcus",
-      "team": "FLORIDA",
-      "objection": "PRICE_CONCERN",
-      "cadence": "AIR DOCS HS26E OPEN EST 0714",
-      "customer": "Nina Camp",
-      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a5f864669a647797b27",
-      "transcript": "The customer raised a script-critical PRICE_CONCERN objection, stating another company was $700 cheaper and 10% off wouldn't be enough. The agent's very next response was a submissive compliance phrase (\"That's okay. I thought I'd put it out there\") and he later agreed with the customer (\"No, I don't blame you\"), making no attempt to defend the value of the offer or ask a diagnostic question to extend the conversation."
-    },
-    {
       "rep_name": "Bailee Raimer",
       "team": "FLORIDA",
       "objection": "NO_NEED_NO_ISSUES",
@@ -353,6 +362,15 @@
       "customer": "Catherine Fletcher",
       "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a5f864682f024edddd9",
       "transcript": "The agent identified several script-critical objections (NO_NEED_NO_ISSUES for the ductwork and HARD_REFUSAL for the surge protector and UV light). After the customer's final refusal (\"No, that's okay... I'll check back with you guys\"), the agent's very next response was a submissive compliance phrase and a sign-off (\"Oh, okay. I gotcha... have a great rest of your day\") without any attempt to pivot to a different service or restate value."
+    },
+    {
+      "rep_name": "Ryan Marcus",
+      "team": "FLORIDA",
+      "objection": "PRICE_CONCERN",
+      "cadence": "AIR DOCS HS26E OPEN EST 0714",
+      "customer": "Nina Camp",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a5f864669a647797b27",
+      "transcript": "The customer raised a script-critical PRICE_CONCERN objection, stating another company was $700 cheaper and 10% off wouldn't be enough. The agent's very next response was a submissive compliance phrase (\"That's okay. I thought I'd put it out there\") and he later agreed with the customer (\"No, I don't blame you\"), making no attempt to defend the value of the offer or ask a diagnostic question to extend the conversation."
     },
     {
       "rep_name": "Christopher Sweigert",
