@@ -92,7 +92,6 @@ or <code style="background:#1A1E2A;padding:1px 5px;border-radius:3px;">generateR
 <footer>Elite Call &middot; Confidential coaching data &middot; <span id="footerDate">&ndash;</span> &middot; Trellus API + Claude API</footer>
 <script>
 
-/* ===== Theme constants ===== */
 const THEME = {
   trackBg: "#1A1E2A",
   metaText: "#4E566B",
@@ -106,7 +105,6 @@ const THEME = {
   valueText: "#D6DAE8"
 };
 
-/* ===== Static reference data (hardcoded per spec — never fetched) ===== */
 const OBJ_META = {
   STALL_BUSY_LATER: { label: "Stall / Busy", color: "#9B8FE8" },
   NO_NEED_NO_ISSUES: { label: "No Need", color: "#5BA4E8" },
@@ -145,7 +143,6 @@ const COACH_NOTES = {
 };
 const COACH_DEFAULT = "Review the call examples and identify the recurring exit phrase \u2014 that's the habit to break.";
 
-/* ===== Helpers ===== */
 function esc(s) {
   return String(s == null ? "" : s)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -171,7 +168,6 @@ function firstName(name) {
   return String(name || "").trim().split(/\s+/)[0] || name;
 }
 
-/* ===== Data shaping ===== */
 function buildData(json) {
   const calls = Array.isArray(json.missed_calls) ? json.missed_calls : [];
 
@@ -184,8 +180,6 @@ function buildData(json) {
     const r = repsMap[k];
     const objections = {};
     r.calls.forEach(function (c) { objections[c.objection] = (objections[c.objection] || 0) + 1; });
-    // Note: the JSON schema only enumerates missed calls, not a separate per-rep
-    // "flagged" total, so flagged is shown equal to missed for each rep.
     return { name: r.name, team: r.team, calls: r.calls, missed: r.calls.length, flagged: r.calls.length, objections: objections };
   }).sort(function (a, b) { return b.missed - a.missed; });
 
@@ -225,7 +219,6 @@ function buildData(json) {
   return { calls: calls, repsArr: repsArr, orgCounts: orgCounts, objBreakdownArr: objBreakdownArr, campaignsArr: campaignsArr };
 }
 
-/* ===== Renderers ===== */
 function repCardBorderColor(rep) {
   const rate = rep.flagged > 0 ? rep.missed / rep.flagged : 0;
   if (rate <= 0) return "#48C98A";
@@ -343,7 +336,6 @@ function renderCampaignRow(camp) {
     '<td style="padding:10px 12px;"><div style="height:6px;background:' + THEME.trackBg + ';border-radius:2px;overflow:hidden;"><div class="camp-bar" style="width:0%;height:100%;border-radius:2px;background:' + meta.color + ';"></div></div></td></tr>';
 }
 
-/* ===== Page assembly ===== */
 function loadingHtml(msg) {
   return '<div style="padding:60px 0;text-align:center;color:' + THEME.metaText + ';font-size:13px;">' + esc(msg || "Loading\u2026") + '</div>';
 }
@@ -383,23 +375,17 @@ function render(json) {
   document.getElementById("ecCount").textContent = data.orgCounts.ec;
   document.getElementById("hailCount").textContent = data.orgCounts.hail;
 
-  document.getElementById("callCountLabel").textContent = data.calls.length + " missed rebuttal calls \u00B7 " + (json.date || "");
-  document.getElementById("campaignCountLabel").textContent = "Missed rebuttals by campaign \u00B7 " + data.campaignsArr.length + " campaigns \u00B7 " + data.calls.length + " total misses";
-
-  // Overview tab
   document.getElementById("tab-ov").innerHTML =
     '<div class="grid-2">' +
     '<div class="card"><div class="card-title">Missed rebuttals by rep</div><div class="card-sub">Trellus missed_rebuttal:True calls</div>' + renderRepBarChart(data.repsArr) + '</div>' +
     '<div class="card"><div class="card-title">Objection breakdown</div><div class="card-sub">Across all ' + data.calls.length + ' missed calls</div>' + renderObjBreakdown(data.objBreakdownArr, data.calls.length) + '</div>' +
     '</div>' + renderRepCards(data.repsArr);
 
-  // Coaching tab
   const coachingReps = data.repsArr.filter(function (r) { return r.missed >= 2; });
   document.getElementById("tab-coaching").innerHTML =
     '<div style="font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:' + THEME.metaText + ';margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid ' + THEME.rowBorder + ';">Reps with 2+ missed rebuttals \u00B7 Pattern analysis + direct call links</div>' +
     coachingReps.map(renderCoachingCard).join("");
 
-  // All calls tab
   document.getElementById("tab-det").innerHTML =
     '<div class="search-bar">' +
     '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b9c6e2" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
@@ -408,7 +394,6 @@ function render(json) {
     data.calls.map(renderDetailRow).join("");
   document.getElementById("callCountLabel").textContent = data.calls.length + " missed rebuttal calls \u00B7 " + (json.date || "");
 
-  // By campaign tab
   document.getElementById("tab-cadence").innerHTML =
     '<div style="font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:' + THEME.metaText + ';margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid ' + THEME.rowBorder + ';" id="campaignCountLabel"></div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>' +
@@ -429,7 +414,6 @@ function render(json) {
   syncVisibility();
 }
 
-/* ===== Nav / filter / search (unchanged behavior) ===== */
 function st(name, btn) {
   document.querySelectorAll(".pane").forEach(function (p) { p.classList.remove("on"); });
   document.querySelectorAll(".tb").forEach(function (b) { b.classList.remove("on"); });
@@ -461,7 +445,6 @@ function searchCalls(val) {
   syncVisibility();
 }
 
-/* ===== Boot ===== */
 setLoading();
 fetch("data/rebuttal_report.json")
   .then(function (res) { if (!res.ok) throw new Error("bad status"); return res.json(); })
