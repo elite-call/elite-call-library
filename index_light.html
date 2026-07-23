@@ -195,6 +195,23 @@ body{
 .node-soon.rh .node-inner{animation:hit-soon .7s ease-out!important}
 .node-vault.rh .node-label,.node-samples.rh .node-label,.node-rebuttal.rh .node-label{opacity:1!important}
 
+/* ── Call Review — cobalt blue sphere, top ── */
+a.node-dta{cursor:pointer}
+a.node-dta .node-inner{
+  background:radial-gradient(circle at 50% 50%, #3a7ee8 0%, #1a50b8 45%, #0a2e8a 100%);
+  box-shadow:0 10px 40px rgba(26,79,216,.55),0 3px 10px rgba(0,0,0,.25),0 0 0 1.5px rgba(255,255,255,.55)}
+a.node-dta .node-num{color:rgba(180,210,255,.9)}
+a.node-dta .node-label{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.25)}
+.node-ripple-dta{position:absolute;inset:-7px;border-radius:50%;border:1.5px solid transparent;border-top-color:rgba(140,180,255,.85);border-right-color:rgba(140,180,255,.2);pointer-events:none;opacity:0;transition:opacity .2s}
+a.node-dta:hover .node-ripple-dta{opacity:1;animation:dta-spin 2.8s linear infinite}
+@keyframes dta-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+a.node-dta:hover .node-inner{transform:scale(1.1)}
+@keyframes dta-blue-text{0%,100%{text-shadow:0 1px 3px rgba(0,0,0,.25);color:#fff}50%{text-shadow:0 0 16px rgba(140,180,255,.9);color:#e0eaff}}
+a.node-dta:hover .node-label{animation:dta-blue-text 2.2s ease-in-out infinite}
+@keyframes hit-dta{0%,100%{box-shadow:0 10px 40px rgba(26,79,216,.55),0 3px 10px rgba(0,0,0,.25),0 0 0 1.5px rgba(255,255,255,.55)}50%{box-shadow:0 14px 54px rgba(26,79,216,.9),0 3px 10px rgba(0,0,0,.25),0 0 0 1.5px rgba(255,255,255,.7),0 0 28px rgba(100,150,255,.35)}}
+a.node-dta.rh .node-inner{animation:hit-dta .7s ease-out!important}
+a.node-dta.rh .node-label{opacity:1!important}
+
 /* ── Node positions (coming soon) ── */
 .node-dta{left:430px;top:78px;--nd:.2s}
 .node-roi{left:704px;top:196px;--nd:.24s}
@@ -281,7 +298,7 @@ a.node-ecu:hover .node-label{animation:mint-text 2.2s ease-in-out infinite}
       <line x1="430" y1="360" x2="430" y2="636" stroke="rgba(240,180,40,.42)" stroke-width="1.5" stroke-dasharray="5 9" filter="url(#glow-gold)" style="animation:dash-flow 1.9s linear infinite reverse"/>
       <line x1="430" y1="360" x2="155" y2="195" stroke="rgba(230,60,70,.42)"  stroke-width="1.5" stroke-dasharray="5 9" style="animation:dash-flow 1.7s linear infinite"/>
       <!-- Coming soon lines — faint static -->
-      <line x1="430" y1="360" x2="430" y2="78"  stroke="rgba(120,180,220,.18)" stroke-width="1" stroke-dasharray="3 12"/>
+      <line x1="430" y1="360" x2="430" y2="78"  stroke="rgba(26,95,212,.38)"  stroke-width="1.5" stroke-dasharray="5 9" style="animation:dash-flow 1.4s linear infinite"/>
       <line x1="430" y1="360" x2="704" y2="196" stroke="rgba(120,180,220,.18)" stroke-width="1" stroke-dasharray="3 12"/>
       <line x1="430" y1="360" x2="704" y2="514" stroke="rgba(100,210,160,.42)" stroke-width="1.5" stroke-dasharray="5 9" style="animation:dash-flow 2.0s linear infinite"/>
     </svg>
@@ -324,14 +341,14 @@ a.node-ecu:hover .node-label{animation:mint-text 2.2s ease-in-out infinite}
       </div>
     </a>
 
-    <!-- DAYS TO APPT -->
-    <div class="node node-soon node-dta">
+    <!-- CALL REVIEW — blue, top -->
+    <a class="node node-active node-dta" href="call-review.html">
       <div class="node-inner">
-        <div class="tooltip">Coming Soon</div>
-        <div class="node-label">Days to Appt</div>
-        <div class="node-sub">Coming Soon</div>
+        <div class="node-ripple-dta"></div>
+        <div class="node-num">04</div>
+        <div class="node-label">Call<br>Review</div>
       </div>
-    </div>
+    </a>
 
     <!-- ROI REPORT -->
     <div class="node node-soon node-roi">

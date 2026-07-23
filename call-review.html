@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call Review Generator — Elite Call</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; color: #0d1b2a; -webkit-font-smoothing: antialiased; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; }
+    ul { list-style: disc; }
+
+    .call-card { break-inside: avoid; }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .report-wrap { max-width: 100%; padding: 0; }
+    }
+    @media screen {
+      .print-only { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+
+const S = {
+  step: 'upload',
+  client: '', campaign: '', date: '',
+  notes: 'Prepared for internal reference ahead of sending recordings to the client.',
+  calls: [], results: [], patterns: [],
+  progress: { current: 0, total: 0, label: '' },
+  error: null,
+};
+
+function setState(patch) {
+  Object.assign(S, patch);
+  render();
+}
+
+// ── UTILITIES ────────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtRep(raw) {
+  if (!raw) return '';
+  return raw.includes(',') ? raw.split(',').reverse().map(p => p.trim()).join(' ') : raw;
+}
+
+const STATUS = {
+  share:   { color: '#15803d', infoBg: '#f0fdf4', summaryBg: '#f0fdf4', label: 'Share As-Is' },
+  solid:   { color: '#1a4fd8', infoBg: '#f8faff', summaryBg: '#f0f9ff', label: 'Solid' },
+  review:  { color: '#b45309', infoBg: '#fffbeb', summaryBg: '#fffbeb', label: 'Review First' },
+  caution: { color: '#b91c1c', infoBg: '#fff5f5', summaryBg: '#fff5f5', label: '⚠ Caution' },
+};
+
+// ── CSV PARSER ───────────────────────────────────────────────────────────────
+
+function parseCSVRow(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (ch === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) throw new Error('CSV must have a header row and at least one data row.');
+  const headers = parseCSVRow(lines[0]).map(h => h.trim().replace(/^\uFEFF/, ''));
+  return lines.slice(1).filter(l => l.trim()).map(line => {
+    const vals = parseCSVRow(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] ?? '').trim(); });
+    return obj;
+  });
+}
+
+// ── CLAUDE PROXY ─────────────────────────────────────────────────────────────
+
+async function callClaude(params) {
+  const body = typeof params === 'string'
+    ? { messages: [{ role: 'user', content: params }], model: 'claude-haiku-4-5', max_tokens: 1024 }
+    : params;
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({ error: 'Non-JSON response from server' }));
+  if (!res.ok) throw new Error(data.error?.message || data.error || `Request failed (${res.status})`);
+  return data.text;
+}
+
+// ── ANALYSIS ─────────────────────────────────────────────────────────────────
+
+async function analyzeCall(call) {
+  const repRaw   = call.Rep || call.rep || '';
+  const phone    = call['Primary Phone'] || call.Phone || call.phone || '';
+  const callType = call['Call Status'] || call['Call Type'] || '';
+  const transcript = call.Transcript || call.transcript || '';
+
+  const prompt = `You are an expert call center QA analyst. Analyze this call and return ONLY a JSON object — no markdown, no explanation.
+
+Rep: ${repRaw}
+Phone: ${phone}
+Call Type: ${callType}
+Transcript:
+${transcript}
+
+Return this exact JSON shape:
+{
+  "customer": "Name and context, e.g. 'Jane Smith (sole decision-maker)'",
+  "address": "service address or empty string",
+  "booked": "appointment date/time or empty string",
+  "status": "share" | "solid" | "review" | "caution",
+  "positives": ["specific observation", "..."],
+  "concerns": ["specific concern", "..."],
+  "summary": "1-2 sentence overall assessment"
+}
+
+Status guide:
+- share: Clean, tight execution — ready to send to client as-is
+- solid: Good call, presentable, minor notes only
+- review: Good outcome but rough delivery or missing steps — listen before sharing
+- caution: Red flags — rebuttal on a sales opp, major confusion, compliance issue`;
+
+  const raw = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error(`Could not parse AI response for: ${repRaw}`);
+  const parsed = JSON.parse(match[0]);
+  const meta = STATUS[parsed.status] || STATUS.solid;
+
+  return {
+    ...parsed,
+    statusLabel: meta.label,
+    color: meta.color,
+    infoBg: meta.infoBg,
+    summaryBg: meta.summaryBg,
+    rep: repRaw,
+    repName: fmtRep(repRaw),
+    phone,
+    callType: callType.replace(/^HS\s*[-–]\s*/i, 'HS '),
+    driveLink: call['Drive Link'] || call['drive_link'] || call['Drive link'] || call['DriveLink'] || '',
+  };
+}
+
+async function analyzePatterns(results) {
+  const summary = results.map((r, i) =>
+    `Call ${i+1} (${r.repName}, ${r.callType}): ${r.summary} Positives: ${(r.positives||[]).join('; ')}. Concerns: ${(r.concerns||[]).join('; ')}.`
+  ).join('\n\n');
+
+  const raw = await callClaude({
+    model: 'claude-sonnet-4-5',
+    max_tokens: 700,
+    messages: [{ role: 'user', content: `You are a call center QA analyst. Identify 2-4 cross-call coaching opportunities. Return ONLY a JSON array (no markdown):\n[{"title":"Pattern Name","description":"2-3 sentence observation and recommendation"},...]\n\n${summary}` }],
+  });
+
+  const match = raw.match(/\[[\s\S]*\]/);
+  return match ? JSON.parse(match[0]) : [];
+}
+
+// ── FILE HANDLING ─────────────────────────────────────────────────────────────
+
+async function handleFile(file) {
+  try {
+    const text = await file.text();
+    const calls = parseCSV(text);
+    const first = calls[0] || {};
+    // Update state but DON'T re-render yet — just update calls + auto-fill from CSV cols
+    S.calls = calls;
+    if (first.Client || first.client) S.client = first.Client || first.client;
+    if (first.Campaign || first.campaign || first['Campaign Name']) S.campaign = first.Campaign || first.campaign || first['Campaign Name'];
+    if (first.Date || first.date) S.date = first.Date || first.date;
+    S.error = null;
+    render(); // re-render once after parsing
+  } catch (e) {
+    setState({ error: e.message });
+  }
+}
+
+// ── GENERATE ─────────────────────────────────────────────────────────────────
+
+async function generate() {
+  if (!S.calls.length) return;
+  if (!S.client.trim()) { setState({ error: 'Please enter a Client Name before generating.' }); return; }
+
+  setState({ step: 'processing', error: null, progress: { current: 0, total: S.calls.length + 1, label: 'Starting analysis…' } });
+
+  try {
+    const results = [];
+    for (let i = 0; i < S.calls.length; i++) {
+      S.progress = { current: i, total: S.calls.length + 1, label: `Analyzing call ${i+1} of ${S.calls.length} — ${fmtRep(S.calls[i].Rep || '')}…` };
+      document.getElementById('prog-bar') && (document.getElementById('prog-bar').style.width = Math.round(i / (S.calls.length + 1) * 100) + '%');
+      document.getElementById('prog-label') && (document.getElementById('prog-label').textContent = S.progress.label);
+      document.getElementById('prog-pct') && (document.getElementById('prog-pct').textContent = Math.round(i / (S.calls.length + 1) * 100) + '% complete');
+      results.push(await analyzeCall(S.calls[i]));
+    }
+
+    S.progress = { current: S.calls.length, total: S.calls.length + 1, label: 'Identifying cross-call patterns…' };
+    document.getElementById('prog-label') && (document.getElementById('prog-label').textContent = S.progress.label);
+    const patterns = await analyzePatterns(results);
+
+    setState({ step: 'report', results, patterns });
+  } catch (e) {
+    setState({ step: 'upload', error: e.message });
+  }
+}
+
+// ── HTML BUILDERS ─────────────────────────────────────────────────────────────
+
+function uploadHTML() {
+  const { calls, client, campaign, date, notes, error } = S;
+  const agentNames = [...new Set(calls.map(c => fmtRep(c.Rep || c.rep || '')).filter(Boolean))].join(', ');
+
+  return `
+<div style="min-height:100vh;background:#f1f5f9;">
+  <div style="background:#0d1b2a;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;">
+    <img src="./uploads/emblem_horizontal_signature.png" style="height:22px;" alt="Elite Call">
+    <span style="color:#475569;font-size:12px;font-weight:500;letter-spacing:.03em;">Call Review Report Generator</span>
+  </div>
+
+  <div style="max-width:700px;margin:48px auto;padding:0 24px 64px;">
+    <h1 style="font-size:26px;font-weight:800;color:#0d1b2a;margin:0 0 6px;">Generate a Call Review Report</h1>
+    <p style="color:#64748b;font-size:14px;margin:0 0 32px;">Upload a call CSV, fill in the report details, and AI will analyze every transcript and format the report automatically.</p>
+
+    ${error ? `<div style="background:#fff5f5;border:1.5px solid #fca5a5;border-radius:8px;padding:12px 16px;color:#b91c1c;font-size:13px;margin-bottom:20px;font-weight:500;">⚠ ${esc(error)}</div>` : ''}
+
+    <!-- Step 1 -->
+    <div style="background:#fff;border-radius:12px;border:1.5px solid #e2e8f0;padding:24px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:#0d1b2a;margin-bottom:16px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.07em;">
+        <span style="background:#1a4fd8;color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;">1</span>
+        Upload CSV
+      </div>
+      <div id="drop-zone" style="border:2px dashed #cbd5e1;border-radius:10px;padding:32px 24px;text-align:center;cursor:pointer;transition:all .15s;">
+        <label style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+          <input type="file" id="file-input" accept=".csv" style="display:none;">
+          <div style="font-size:28px;margin-bottom:8px;">📄</div>
+          <div style="font-weight:700;color:#0d1b2a;font-size:14px;margin-bottom:3px;">Drop CSV here or click to browse</div>
+          <div style="color:#94a3b8;font-size:12px;">Required: <strong>Primary Phone, Rep, Call Status, Transcript</strong></div>
+          <div style="color:#94a3b8;font-size:12px;margin-top:2px;">Optional: Drive Link, Client, Campaign, Date</div>
+        </label>
+      </div>
+      ${calls.length > 0 ? `
+      <div style="margin-top:12px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span>✓ ${calls.length} calls loaded</span>
+        ${agentNames ? `<span style="color:#86efac;">·</span><span style="font-weight:400;color:#16a34a;">${esc(agentNames)}</span>` : ''}
+      </div>` : ''}
+    </div>
+
+    <!-- Step 2 -->
+    <div style="background:#fff;border-radius:12px;border:1.5px solid #e2e8f0;padding:24px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:#0d1b2a;margin-bottom:16px;display:flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:.07em;">
+        <span style="background:#1a4fd8;color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;">2</span>
+        Report Details
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Client Name *</label>
+          <input id="inp-client" type="text" value="${esc(client)}" placeholder="e.g. The Chill Brothers" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b2a;outline:none;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Campaign</label>
+          <input id="inp-campaign" type="text" value="${esc(campaign)}" placeholder="e.g. HS26C AGED LEADS 0721" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b2a;outline:none;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Review Date</label>
+          <input id="inp-date" type="text" value="${esc(date)}" placeholder="e.g. July 22, 2026" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b2a;outline:none;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Report Note</label>
+          <input id="inp-notes" type="text" value="${esc(notes)}" placeholder="Prepared for internal reference..." style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b2a;outline:none;">
+        </div>
+      </div>
+    </div>
+
+    <!-- CSV spec -->
+    <div style="background:#f8faff;border:1px solid #dbeafe;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;color:#1a4fd8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Expected CSV Columns</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+        ${['Primary Phone','Rep','Call Status','Transcript'].map(c => `<span style="background:#1a4fd8;color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${c}</span>`).join('')}
+        ${['Drive Link','Client','Campaign','Date'].map(c => `<span style="background:transparent;color:#64748b;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px dashed #cbd5e1;">${c}</span>`).join('')}
+      </div>
+      <div style="font-size:11px;color:#94a3b8;">Solid = required &nbsp;·&nbsp; Dashed = optional future columns</div>
+    </div>
+
+    <button id="btn-generate" style="width:100%;padding:14px;background:${calls.length > 0 ? '#1a4fd8' : '#cbd5e1'};color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:${calls.length > 0 ? 'pointer' : 'not-allowed'};">
+      Analyze Calls &amp; Generate Report →
+    </button>
+  </div>
+</div>`;
+}
+
+function processingHTML() {
+  const { progress } = S;
+  const pct = progress.total > 0 ? Math.round(progress.current / progress.total * 100) : 0;
+  return `
+<div style="min-height:100vh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:52px 60px;text-align:center;max-width:440px;width:calc(100% - 48px);box-shadow:0 4px 32px rgba(0,0,0,.08);">
+    <img src="./uploads/emblem_horizontal_signature.png" style="height:26px;margin-bottom:36px;opacity:.7;" alt="Elite Call">
+    <h2 style="font-size:20px;font-weight:800;color:#0d1b2a;margin:0 0 6px;">Analyzing Calls</h2>
+    <p id="prog-label" style="color:#64748b;font-size:13px;margin:0 0 28px;min-height:40px;">${esc(progress.label)}</p>
+    <div style="background:#e2e8f0;border-radius:20px;height:6px;width:100%;overflow:hidden;margin-bottom:10px;">
+      <div id="prog-bar" style="background:#1a4fd8;height:100%;border-radius:20px;width:${pct}%;transition:width .4s ease;"></div>
+    </div>
+    <div id="prog-pct" style="font-size:12px;color:#94a3b8;font-weight:500;">${pct}% complete</div>
+  </div>
+</div>`;
+}
+
+function callCardHTML(call, index) {
+  const meta = STATUS[call.status] || STATUS.solid;
+  const plusItems = (call.positives || []).map(p => `<li>${esc(p)}</li>`).join('');
+  const negItems  = (call.concerns  || []).map(c => `<li>${esc(c)}</li>`).join('');
+  return `
+<div class="call-card" style="border:1.5px solid #e2e8f0;border-radius:12px;margin-bottom:24px;overflow:hidden;">
+  <div style="background:${meta.color};padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="background:rgba(255,255,255,.18);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;">${index + 1}</div>
+      <div>
+        <div style="color:#fff;font-size:16px;font-weight:700;line-height:1.2;">${esc(call.repName)}</div>
+        <div style="color:rgba(255,255,255,.65);font-size:12px;font-weight:500;">${esc(call.phone)} &nbsp;&middot;&nbsp; ${esc(call.callType)}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="background:rgba(255,255,255,.18);color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:20px;white-space:nowrap;">${esc(meta.label)}</span>
+      ${call.driveLink ? `<a href="${esc(call.driveLink)}" target="_blank" rel="noopener" style="background:#fff;color:${meta.color};font-size:11px;font-weight:700;padding:6px 14px;border-radius:20px;white-space:nowrap;display:inline-block;">&#9654; Listen</a>` : ''}
+    </div>
+  </div>
+  <div style="padding:14px 24px;background:${meta.infoBg};border-bottom:1px solid #e2e8f0;display:flex;gap:20px;flex-wrap:wrap;">
+    <div style="font-size:12px;color:#475569;"><span style="font-weight:600;color:#0d1b2a;">Customer:</span> ${esc(call.customer)}</div>
+    ${call.address ? `<div style="font-size:12px;color:#475569;"><span style="font-weight:600;color:#0d1b2a;">Address:</span> ${esc(call.address)}</div>` : ''}
+    ${call.booked  ? `<div style="font-size:12px;color:#475569;"><span style="font-weight:600;color:#0d1b2a;">Booked:</span>  ${esc(call.booked)}</div>`  : ''}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;">
+    <div style="padding:20px 24px;border-right:1px solid #e2e8f0;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#15803d;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;background:#15803d;border-radius:50%;display:inline-block;flex-shrink:0;"></span>Positives
+      </div>
+      <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#374151;line-height:1.75;">${plusItems}</ul>
+    </div>
+    <div style="padding:20px 24px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b91c1c;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+        <span style="width:8px;height:8px;background:#b91c1c;border-radius:50%;display:inline-block;flex-shrink:0;"></span>Concerns
+      </div>
+      <ul style="margin:0;padding-left:16px;font-size:12.5px;color:#374151;line-height:1.75;">${negItems}</ul>
+      <div style="background:${meta.summaryBg};border-left:3px solid ${meta.color};border-radius:0 6px 6px 0;padding:10px 14px;margin-top:14px;font-size:12px;color:#0d1b2a;font-weight:500;line-height:1.5;">${esc(call.summary)}</div>
+    </div>
+  </div>
+</div>`;
+}
+
+function reportHTML() {
+  const { results, patterns, client, campaign, date, notes } = S;
+  const shareReady = results.filter(r => r.status === 'share' || r.status === 'solid').length;
+  const flagged    = results.filter(r => r.status === 'caution').length;
+  const agents     = [...new Set(results.map(r => r.repName).filter(Boolean))].length;
+  const title      = [client, campaign, date ? `Call Review (${date})` : 'Call Review'].filter(Boolean).join(' — ');
+  const subtitle   = [campaign ? `Campaign: ${campaign}` : '', date ? `Requested Call Review — ${date}` : 'Requested Call Review'].filter(Boolean).join(' · ');
+
+  const cards = results.map((r, i) => callCardHTML(r, i)).join('');
+  const patternCards = (patterns || []).map(p => `
+    <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:16px 18px;">
+      <div style="color:#94a3b8;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">${esc(p.title)}</div>
+      <p style="color:#e2e8f0;font-size:12.5px;line-height:1.65;margin:0;">${esc(p.description)}</p>
+    </div>`).join('');
+
+  return `
+<!-- Action bar -->
+<div class="no-print" style="background:#0d1b2a;padding:10px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;border-bottom:1px solid rgba(255,255,255,.06);">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <img src="./uploads/emblem_horizontal_signature.png" style="height:18px;" alt="Elite Call">
+    <span style="color:#475569;font-size:11px;font-weight:500;">${esc(title)}</span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button id="btn-reset" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#94a3b8;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;">← New Report</button>
+    <button onclick="window.print()" style="background:#1a4fd8;border:none;color:#fff;padding:7px 14px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;">Export PDF</button>
+  </div>
+</div>
+
+<!-- Report -->
+<div class="report-wrap" style="max-width:860px;margin:0 auto;padding:40px 32px 64px;">
+
+  <!-- Print header -->
+  <div class="print-only" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:2px solid #1a4fd8;margin-bottom:32px;">
+    <img src="./uploads/emblem_horizontal_signature.png" style="height:22px;" alt="Elite Call">
+    <span style="font-size:10px;font-weight:600;color:#64748b;letter-spacing:.08em;text-transform:uppercase;">${esc(title)}</span>
+  </div>
+
+  <!-- Cover -->
+  <div style="background:#0d1b2a;border-radius:12px;padding:36px 40px 32px;margin-bottom:36px;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-30px;right:-30px;width:200px;height:200px;border-radius:50%;background:rgba(26,79,216,.18);pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-50px;right:60px;width:120px;height:120px;border-radius:50%;background:rgba(26,79,216,.10);pointer-events:none;"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;gap:16px;">
+      <div>
+        <div style="display:inline-block;background:#1a4fd8;color:#fff;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border-radius:20px;margin-bottom:14px;">QA Call Review</div>
+        <h1 style="color:#fff;font-size:28px;font-weight:800;margin:0 0 6px;line-height:1.2;">${esc(client)}</h1>
+        <p style="color:#94a3b8;font-size:14px;font-weight:500;margin:0 0 4px;">${esc(subtitle)}</p>
+        <p style="color:#64748b;font-size:12px;font-weight:400;margin:0;font-style:italic;">${esc(notes)}</p>
+      </div>
+      <img src="./uploads/emblem_horizontal_signature.png" style="height:28px;opacity:.55;margin-top:4px;flex-shrink:0;" alt="Elite Call">
+    </div>
+    <div style="display:flex;gap:16px;margin-top:28px;position:relative;flex-wrap:wrap;">
+      <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:12px 18px;flex:1;min-width:80px;">
+        <div style="color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">Calls</div>
+        <div style="color:#fff;font-size:22px;font-weight:800;">${results.length}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:12px 18px;flex:1;min-width:80px;">
+        <div style="color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">Agents</div>
+        <div style="color:#fff;font-size:22px;font-weight:800;">${agents}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:12px 18px;flex:1;min-width:80px;">
+        <div style="color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">Share Ready</div>
+        <div style="color:#4ade80;font-size:22px;font-weight:800;">${shareReady} / ${results.length}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:12px 18px;flex:1;min-width:80px;">
+        <div style="color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;">Flagged</div>
+        <div style="color:#fb923c;font-size:22px;font-weight:800;">${flagged}</div>
+      </div>
+    </div>
+  </div>
+
+  ${cards}
+
+  <!-- Cross-call patterns -->
+  <div style="background:#0d1b2a;border-radius:12px;padding:28px 32px;break-inside:avoid;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+      <div style="width:30px;height:30px;background:#1a4fd8;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="color:#fff;font-size:13px;font-weight:800;">!</span>
+      </div>
+      <h2 style="color:#fff;font-size:15px;font-weight:800;margin:0;">Cross-Call Patterns to Note</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">${patternCards}</div>
+  </div>
+</div>`;
+}
+
+// ── RENDER + EVENT BINDING ────────────────────────────────────────────────────
+
+function render() {
+  const app = document.getElementById('app');
+  if (S.step === 'upload')      app.innerHTML = uploadHTML();
+  else if (S.step === 'processing') app.innerHTML = processingHTML();
+  else if (S.step === 'report') app.innerHTML = reportHTML();
+  bindEvents();
+}
+
+function bindEvents() {
+  if (S.step === 'upload') {
+    const fileInput = document.getElementById('file-input');
+    const dropZone  = document.getElementById('drop-zone');
+    const btnGen    = document.getElementById('btn-generate');
+
+    if (fileInput) fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) handleFile(f); });
+
+    if (dropZone) {
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor='#1a4fd8'; dropZone.style.background='#f0f4ff'; });
+      dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='#cbd5e1'; dropZone.style.background=''; });
+      dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.style.borderColor='#cbd5e1'; dropZone.style.background=''; const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+    }
+
+    if (btnGen) btnGen.addEventListener('click', generate);
+
+    // Live field updates — no re-render, just update state
+    const fields = { 'inp-client':'client', 'inp-campaign':'campaign', 'inp-date':'date', 'inp-notes':'notes' };
+    Object.entries(fields).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', e => { S[key] = e.target.value; });
+    });
+  }
+
+  if (S.step === 'report') {
+    const btnReset = document.getElementById('btn-reset');
+    if (btnReset) btnReset.addEventListener('click', () => setState({ step:'upload', calls:[], results:[], patterns:[], error:null }));
+  }
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
