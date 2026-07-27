@@ -259,6 +259,8 @@
   .sg .m{color:#1a8050;font-weight:700}
   .sg .m.d{color:#c42028}
   .muted-note{font-size:10px;color:#8aaac8;font-style:italic;font-weight:600}
+  .coach-note .muted-note{margin-bottom:5px;display:block}
+  .coach-note .call-link{display:inline-block}
 
   /* ---- Sample Calls — upgraded call-player style ---- */
   .call-item{display:flex;gap:8px;align-items:flex-start;margin:5px 0;padding:7px 9px;
@@ -494,9 +496,7 @@ function editionShort(s){
   if(!s)return'Elite Call';
   var m=s.match(/[A-Za-z]+/g);
   if(!m)return'Elite Call';
-  var a=m[0].slice(0,3).toUpperCase();
-  var b=m[m.length-1].slice(0,3).toUpperCase();
-  return a===b?a:a+'–'+b;
+  return m[m.length-1].slice(0,3).toUpperCase();
 }
 
 function composite(r){var sum=0,w=0;STATS.forEach(function(s){var sc=scoreStat(s,r);if(sc==null)return;var ww=WEIGHTS[s.key]||0;sum+=sc*ww;w+=ww;});return w?Math.round(sum/w):0;}
@@ -530,6 +530,22 @@ function gradeLevel(c){
   return c>=90?['Gem','var(--gold-lt)']:c>=80?['Mint','#8fb0e0']:c>=68?['Fine','#d0a24e']:['Good','#9aa6b8'];
 }
 
+/* ---- Roster-relative stat ranges (for Stat Breakdown bars) ---- */
+function rosterStats(rows){
+  var res={};
+  STATS.forEach(function(s){
+    var vals=rows.map(function(r){return scoreStat(s,r);}).filter(function(v){return v!=null;});
+    res[s.key]={min:vals.length?Math.min.apply(null,vals):0,max:vals.length?Math.max.apply(null,vals):100};
+  });
+  return res;
+}
+function relFill(s,sc,roster){
+  if(sc==null)return null;
+  var rg=roster&&roster[s.key];
+  if(!rg||rg.max<=rg.min)return 50;
+  return Math.max(0,Math.min(100,Math.round((sc-rg.min)/(rg.max-rg.min)*100)));
+}
+
 /* ---- Deterministic tier roll (stable per agent+period) ---- */
 function hashStr(s){var h=2166136261>>>0;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
@@ -538,6 +554,36 @@ function rollTier(seed){
   var tot=TIERS.reduce(function(s,t){return s+t.w;},0),x=rnd()*tot;
   for(var i=0;i<TIERS.length;i++){x-=TIERS[i].w;if(x<0)return TIERS[i];}
   return TIERS[0];
+}
+
+/* ---- Guaranteed rarity floor ----
+   Every card still rolls independently via rollTier (stat-weighted, seeded,
+   stable across reloads). After the full roll, if fewer than MIN_CHASE_CARDS
+   landed MVP/Elite, we top up: the highest-composite agents who didn't roll
+   chase get bumped to MVP or Elite (also seeded, weighted toward MVP so Elite
+   stays rarer even among guaranteed upgrades). Scoped per-edition — whatever
+   full roster is currently on screen (live feed or one archived period). */
+var MIN_CHASE_CARDS=5;
+function computeTierAssignments(rows){
+  var base=rows.map(function(r){
+    var key=(r.agent_id||r.display_name)+'|'+(r.period_label||'');
+    return{key:key,tier:rollTier(key),comp:composite(r)};
+  });
+  var chaseCount=base.filter(function(x){return x.tier.rank>=4;}).length;
+  var need=MIN_CHASE_CARDS-chaseCount;
+  if(need>0){
+    var mvp=TIERS[3],elite=TIERS[4];
+    base.filter(function(x){return x.tier.rank<4;})
+      .sort(function(a,b){return b.comp-a.comp;})
+      .slice(0,need)
+      .forEach(function(x){
+        var rnd=mulberry32(hashStr(x.key+'|upgrade'))();
+        x.tier=rnd<0.72?mvp:elite; // weighted toward MVP so Elite stays rarer
+      });
+  }
+  var map={};
+  base.forEach(function(x){map[x.key]=x.tier;});
+  return map;
 }
 
 /* ---- CSV parser ---- */
@@ -570,13 +616,14 @@ function makeWave(ci){
 var STATE={tab:'vault',feed:[],archive:[],periods:[],dir:-1,divOn:{},tierOn:{}};
 
 /* ---- Build one card element ---- */
-function card(r,cardNo,total,cellIdx){
+function card(r,cardNo,total,cellIdx,roster,tierMap){
   var name=r.display_name||'';
   var parts=name.split(/\s+/);
   var mono=((parts[0]||'')[0]||'')+((parts[parts.length-1]||'')[0]||'');
   var graded=(r.graded||'').toLowerCase()==='yes';
   var comp=composite(r);
-  var tier=rollTier((r.agent_id||name)+'|'+(r.period_label||''));
+  var tierKey=(r.agent_id||name)+'|'+(r.period_label||'');
+  var tier=(tierMap&&tierMap[tierKey])||rollTier(tierKey);
 
   var el=document.createElement('div');
   el.className='card';
@@ -606,10 +653,8 @@ function card(r,cardNo,total,cellIdx){
     return '<div class="tile '+f.cls+'"><div class="v">'+f.v+'</div><div class="l">'+s.label+'</div></div>';
   }).join('');
 
-  /* Grade / WIP badge */
-  var badge=graded
-    ?(function(){var g=gradeLevel(comp);return '<div class="grade" style="--gg:'+g[1]+'"><div class="g">'+comp+'</div><div class="gl">'+g[0]+'</div></div>';})()
-    :'<div class="wip"><div class="g">WK '+(r.period_week||'?')+'</div><div class="gl">In progress</div></div>';
+  /* Grade badge — always shows the current composite grade, period-to-date or final. */
+  var badge=(function(){var g=gradeLevel(comp);return '<div class="grade" style="--gg:'+g[1]+'"><div class="g">'+comp+'</div><div class="gl">'+g[0]+'</div></div>';})();
 
   /* Front face */
   var front='<div class="face front"><div class="foil"></div><div class="inner">'+
@@ -632,25 +677,15 @@ function card(r,cardNo,total,cellIdx){
     '</div>'+
     '</div></div>';
 
-  /* Back — stat bars */
+  /* Back — stat bars (fill is relative to the current roster, not a fixed target) */
   var bars=STATS.map(function(s){
-    var sc=scoreStat(s,r),f=fmtStat(s,r);
+    var sc=scoreStat(s,r),f=fmtStat(s,r),pct=relFill(s,sc,roster);
     return '<div class="bar">'+
       '<span class="bl">'+s.label+'</span>'+
-      '<span class="bt"><span class="bf" style="width:'+(sc==null?0:sc)+'%"></span></span>'+
+      '<span class="bt"><span class="bf" style="width:'+(pct==null?0:pct)+'%"></span></span>'+
       '<span class="bn">'+f.v+'</span>'+
     '</div>';
   }).join('');
-
-  /* Back — trend sparkline */
-  var lph=(r.trend_lph||'').split('|').filter(function(x){return x!=='';}).map(Number);
-  var tr=lph.length?lph:(r.trend||'').split('|').filter(function(x){return x!=='';}).map(Number);
-  var spark=tr.length
-    ?(function(){
-        var mx=Math.max.apply(null,tr.concat([1]));
-        return '<div class="spark">'+tr.map(function(v){return '<span style="height:'+Math.max(8,v/mx*100)+'%"></span>';}).join('')+'</div>';
-      })()
-    :'<div class="muted-note">No trend history yet.</div>';
 
   /* Back — sample calls (upgraded player style) */
   var samples=[];try{samples=JSON.parse(r.sample_calls||'[]');}catch(e){samples=[];}
@@ -672,17 +707,14 @@ function card(r,cardNo,total,cellIdx){
       }).join('')
     :'<div class="muted-note">'+(r.company==='hail911'?'No sample calls for Hail911.':'No sample calls flagged this edition.')+'</div>';
 
-  /* Back — QA */
-  var praise=r.qa_latest_praise
-    ?'<div class="sg"><span class="m">\u25b2</span><span>'+r.qa_latest_praise+'</span></div>'
-    :'<div class="muted-note">'+(r.company==='hail911'?'No QA for Hail911 (by design).':'No recent praise logged.')+'</div>';
-  var growth=r.qa_latest_coaching
-    ?'<div class="sg"><span class="m d">\u25bc</span><span>'+r.qa_latest_coaching+'</span></div>'
-    :'<div class="muted-note">\u2014</div>';
+  /* Back — Strengths / Growth Areas: links out to Trellus' own AI Analysis rather than
+     duplicating it or relying on a QA rep manually logging a line item. */
+  var coaching=r.company==='hail911'
+    ?'<div class="muted-note">No QA for Hail911 (by design).</div>'
+    :'<div class="coach-note"><div class="muted-note">AI-generated call analysis for '+name+' lives in Trellus.</div>'+
+      '<a class="call-link" href="https://app.trellus.ai/analytics?tab=ai_analysis" target="_blank" rel="noopener">Open in Trellus \u2192</a></div>';
 
-  var ovr=graded
-    ?'<div class="bovr">'+comp+'<small>OVR</small></div>'
-    :'<div class="bovr" style="color:#3e5270">\u2014<small>Ungraded</small></div>';
+  var ovr='<div class="bovr">'+comp+'<small>OVR</small></div>';
 
   var schedNote=(r.percent_scheduled&&r.percent_scheduled!=='-')?' \u00b7 Sched '+r.percent_scheduled:'';
 
@@ -694,10 +726,8 @@ function card(r,cardNo,total,cellIdx){
       ovr+
     '</div>'+
     '<div class="sect">Stat Breakdown</div>'+bars+
-    '<div class="sect">Trend \u00b7 Leads / Hr</div>'+spark+
     '<div class="sect">Sample Calls \u00b7 via Trellus</div>'+calls+
-    '<div class="sect">Strengths</div>'+praise+
-    '<div class="sect">Growth Areas</div>'+growth+
+    '<div class="sect">Strengths &amp; Growth Areas</div>'+coaching+
   '</div></div>';
 
   el.innerHTML='<div class="flip">'+front+back+'</div>';
@@ -728,8 +758,11 @@ function render(){
 
   /* stable card numbers (alphabetical across full edition) */
   all.sort(function(a,b){return(a.display_name||'').localeCompare(b.display_name||'');});
+  var tierMap=computeTierAssignments(all);
+  STATE.tierMap=tierMap;
   var withNo=all.map(function(r,i){
-    return{r:r,no:i+1,tier:rollTier((r.agent_id||r.display_name)+'|'+(r.period_label||''))};
+    var key=(r.agent_id||r.display_name)+'|'+(r.period_label||'');
+    return{r:r,no:i+1,tier:tierMap[key]||rollTier(key)};
   });
   var total=withNo.length;
 
@@ -753,8 +786,9 @@ function render(){
   if(!rows.length){
     grid.innerHTML='<div class="empty">No cards match. Clear the search or filters.</div>';
   } else {
+    var roster=rosterStats(rows.map(function(x){return x.r;}));
     rows.forEach(function(x,i){
-      var result=card(x.r,x.no,total,i);
+      var result=card(x.r,x.no,total,i,roster,tierMap);
       var wrap=document.createElement('div');
       wrap.className='card-wrap';
       var agentId=x.r.agent_id||x.r.display_name||'';
@@ -779,7 +813,11 @@ function render(){
 
 function updateReadout(){
   var rows=activeRows();
-  var chase=rows.filter(function(r){return rollTier((r.agent_id||r.display_name)+'|'+(r.period_label||'')).rank>=4;}).length;
+  var tierMap=STATE.tierMap||computeTierAssignments(rows);
+  var chase=rows.filter(function(r){
+    var key=(r.agent_id||r.display_name)+'|'+(r.period_label||'');
+    return(tierMap[key]||rollTier(key)).rank>=4;
+  }).length;
   var divs={};rows.forEach(function(r){if(r.team)divs[r.team]=1;});
   var edLabel=STATE.tab==='vault'
     ?(STATE.feed[0]?(STATE.feed[0].graded==='yes'?'Graded':'Wk '+(STATE.feed[0].period_week||'?')+'/4'):'—')
@@ -801,7 +839,7 @@ function updateEditline(total){
   }
   document.getElementById('editline').innerHTML=
     '<span class="e"><b>'+total+'</b> cards \u00b7 <b>'+(lbl||'\u2014')+'</b> ('+tag+')</span>'+
-    '<span class="note"><span class="st">\u2605</span> Rarity is determined by random chance \u2014 better stats earn better odds.</span>';
+    '<span class="note"><span class="st">\u2605</span> Rarity is determined by random chance \u2014 better stats earn better odds. Every edition guarantees at least '+MIN_CHASE_CARDS+' chase cards (MVP/Elite).</span>';
 }
 
 function toggleDir(){STATE.dir*=-1;document.getElementById('dir').textContent=STATE.dir===-1?'↓':'↑';render();}
