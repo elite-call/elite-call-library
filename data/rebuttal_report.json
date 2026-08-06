@@ -1,8 +1,107 @@
 {
   "date": "2026-08-06",
-  "total_missed": 169,
-  "total_flagged": 169,
+  "total_missed": 180,
+  "total_flagged": 180,
   "missed_calls": [
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "SPOUSE_DECISION_MAKER",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "HYUNCHAN SHIN",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a75141f9189bbbb8330",
+      "transcript": "The customer provided a SPOUSE_DECISION_MAKER objection (\"I'm not talking to this part of my husband. I'll talk to him later\"), and the agent immediately conceded with \"Oh, yeah, we'll. We'll call you later\" and ended the call without any attempt to rebut or provide more value."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "STEVEN YOUNGER",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a750b389ab1e91e475f",
+      "transcript": "The customer provided a script-critical objection (\"I'm not interested\") and the agent's very next response was a submissive compliance phrase (\"Okay, I understand that\") without any further attempt to rebut or extend the conversation before the transcript ends."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "JUDITH FRITZ",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a75085503ccb9d6345e",
+      "transcript": "After the customer gave a hard refusal (\"I'm sorry, but no\"), the agent immediately gave up with a compliance phrase (\"Okay. No. And I appreciate it\") without any final attempt to pivot or offer a callback."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "WAYNE VAHSHOLTZ",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a75077d363e5e0176f9",
+      "transcript": "The customer provided a script-critical objection (\"I'm a carpenter, so I take care of my own\") and the agent's very next response was a sign-off (\"Okay. Thank you, too. I hope you have a great day now\") without any attempt to pivot or rebut."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "KEVIN SHIREMAN",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a750574404f6d1e54ce",
+      "transcript": "The agent missed a critical rebuttal opportunity. When the customer stated they already talked to their roofers (ALREADY_COMPLETED/NO_NEED), the agent's very next response was a sign-off (\"Alrighty, have a great day now\") without any attempt to offer a second opinion or safety inspection."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "SANTOS GUZMAN",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a7504617b1ad4090651",
+      "transcript": "The agent missed a rebuttal opportunity when the customer said they were out of town; instead of pivoting to a ground-level inspection or a firm callback date, the agent simply said \"Thank you, though\" and ended the call."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "DANIEL GOENTZEL",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a74ff0e634df60e7058",
+      "transcript": "The customer provided a script-critical objection (\"I'll do it myself\") and the agent's very next response after a brief follow-up question was a sign-off (\"I appreciate it. Have a good day\"), failing to provide a value-driven rebuttal."
+    },
+    {
+      "rep_name": "Lindsay Fowler",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "TONY WAGERS",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a74fda2bdd059323c7a",
+      "transcript": "The customer provided a NO_NEED_NO_ISSUES objection (\"I think I'm fine\"), and the agent immediately conceded with \"Okay, sounds good\" and a goodbye."
+    },
+    {
+      "rep_name": "Kenna Anglea",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "AIRTRON NASHVILLE HS26C ACTIVE 0727",
+      "customer": "Sandy Kowalski",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a74fa9e5ccadfe921f0",
+      "transcript": "The agent immediately accepted the customer's refusal (\"I think we're gonna go with somebody else's service\") with a submissive \"Okay. Of course\" and ended the call without any attempt to defend the value or ask a follow-up question."
+    },
+    {
+      "rep_name": "Kenna Anglea",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "AIRTRON NASHVILLE HS26C ACTIVE 0727",
+      "customer": "Jennifer Gomez",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a74fa44e877f1780292",
+      "transcript": "The agent missed a critical rebuttal opportunity when the customer said \"I haven't even owned the house a year yet\" by simply responding \"Okay. That's okay\" and ending the call."
+    },
+    {
+      "rep_name": "Helen Wachowiak",
+      "team": "HAIL911",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EMPORIA KS RR26C 08052026 CELLS",
+      "customer": "MATTHEW KRAFT",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a74f8d67d1ccdd72674",
+      "transcript": "The agent missed a rebuttal opportunity by saying \"Okay\" and letting the call go immediately after the customer's soft refusal (\"Thank you anyway\")."
+    },
     {
       "rep_name": "Helen Wachowiak",
       "team": "HAIL911",
