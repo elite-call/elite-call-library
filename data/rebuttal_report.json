@@ -1,8 +1,26 @@
 {
   "date": "2026-08-10",
-  "total_missed": 129,
-  "total_flagged": 129,
+  "total_missed": 131,
+  "total_flagged": 131,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NOT_ELIGIBLE_SITUATIONAL",
+      "cadence": "A1G ABQ HS26M PRIORITY OTHER NEW",
+      "customer": "Tracy Sanchez",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a7a5806269f6e626db8",
+      "transcript": "The customer gave a script-critical objection (\"Nope, I'm good. Thank you\") and the agent immediately moved to a sign-off (\"Yes, ma'am. I appreciate your time\") without any attempt to restate value or ask a follow-up question."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G FLG HS26M PRIORITY TIERS OTHER NEW",
+      "customer": "Francis Bigler",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a7a4f430ce896a2f970",
+      "transcript": "The customer provided a script-critical objection (\"No, I'm good... garage doors have been working great\"), and the agent immediately conceded with \"All right... I appreciate your time\" without attempting any value-driven rebuttal or diagnostic question."
+    },
     {
       "rep_name": "Anjanette Alvarado",
       "team": "ILLINOIS",
