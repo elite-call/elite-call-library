@@ -1,8 +1,53 @@
 {
   "date": "2026-08-18",
-  "total_missed": 111,
-  "total_flagged": 112,
+  "total_missed": 116,
+  "total_flagged": 117,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "EAST BAY SE26P ACTIVE 0805",
+      "customer": "Debbie & Dave Mc Euen",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a84e21820fbbda6e46e",
+      "transcript": "The customer provided a script-critical objection (NO_NEED_NO_ISSUES\"I think we're good\"), and the agent's very next response was a submissive sign-off (\"Okay, yes, sir. Well, I appreciate your time today\") without any attempt to defend the value or ask a follow-up question."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "EAST BAY SE26P ACTIVE 0805",
+      "customer": "PRAJESH DESAI",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a84e04c271af233f0d5",
+      "transcript": "The customer provided a stall/objection (\"I'll have to check with the doctor and get back to you\"), and the agent's very next response was a submissive sign-off (\"Okay, that sounds good... have a good day\") without any attempt to keep the conversation going or provide a rebuttal."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "EAST BAY SE26P ACTIVE 0805",
+      "customer": "Lung Tsai",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a84dd500a450bf1a380",
+      "transcript": "The customer provided a script-critical objection (\"I'm no longer a member\") and the agent's very next response was a submissive compliance phrase (\"Okay, yeah, I'll go ahead and update that then\") followed by a quick sign-off without any attempt to pivot to a non-member service or defend the value of the maintenance."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "ALREADY_COMPLETED",
+      "cadence": "EAST BAY SE26P ACTIVE 0805",
+      "customer": "SURESH NARLA",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a84d984406af2b65558",
+      "transcript": "The customer provided a script-critical objection (Already Completed), and the agent's very next response was a sign-off/compliance phrase (\"Oh, yeah. No, I understand. Is there anything else I can help you out with?\") without any attempt to pivot to a different service or verify the work."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "EAST BAY SE26P ACTIVE 0805",
+      "customer": "Gilda Spencer",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a84cf2d9b0c8970bce5",
+      "transcript": "The customer provided a script-critical objection (STALL_BUSY_LATER) by asking to be called back next year. The agent immediately conceded with \"Oh, yeah, we can definitely do that\" without any attempt to restate the value of the current offer or pivot."
+    },
     {
       "rep_name": "Rebekah Laughbaum",
       "team": "ILLINOIS",
