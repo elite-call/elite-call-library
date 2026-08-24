@@ -1,8 +1,80 @@
 {
   "date": "2026-08-24",
-  "total_missed": 148,
-  "total_flagged": 150,
+  "total_missed": 156,
+  "total_flagged": 158,
   "missed_calls": [
+    {
+      "rep_name": "Tim Snyder",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cc4fbf9dcdd811778",
+      "transcript": ""
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "ABC MIDWEST HS26 HS26C INACTIVE 0806",
+      "customer": "Chris Rider",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cc13f385b9ebbc0d4",
+      "transcript": "The agent missed a critical rebuttal opportunity by immediately ending the call with \"Okay. Gotcha\" after the customer's \"not interested\" objection, without any attempt to defend the value of the $49 offer."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "ABC MIDWEST HS26 HS26C INACTIVE 0806",
+      "customer": "Karen Sadler",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cc09d293d979ad954",
+      "transcript": "The customer gave a \"HARD_REFUSAL\" (\"Not interested right now\") and the agent's very next response was a compliance sign-off (\"Okay, no worries... have a great one\") without any attempt to probe for needs or restate value."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "ABC MIDWEST HS26 HS26C INACTIVE 0806",
+      "customer": "Laura Kamp",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cbdb97ddc8063ee01",
+      "transcript": "The customer provided a vague response (\"Now you tune. Ish time.\") which functioned as a stall or hesitation, and the agent immediately gave up with \"OK. No worries\" without asking a clarifying question or attempting to schedule."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "ABC MIDWEST HS26 HS26C INACTIVE 0806",
+      "customer": "Kathy Laporte",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cb75f8478ed0056d7",
+      "transcript": "The agent missed a script-critical rebuttal opportunity by immediately ending the call (\"Yeah, no worries. I'll go ahead and update that\") after the customer stated they already had the service done, without attempting to pivot to another trade like plumbing."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "ABC MIDWEST HS26 HS26C INACTIVE 0806",
+      "customer": "Carmen Salazar",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cb6f2a4aa32406e7b",
+      "transcript": "The customer gave a confusing \"Unknown\" response and then signed off with \"Okay, bye,\" and the agent simply complied with \"Was. Gotcha. Thank you\" instead of attempting to clarify or re-pitch the value."
+    },
+    {
+      "rep_name": "Grant Elliott",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "A1G BOI HS26M PRIORITY OTHER TIER",
+      "customer": "Gary Multanen",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cb6a79236def7742a",
+      "transcript": "The customer provided a \"NO_NEED\" objection (\"You just put in a new garage door\"), and the agent's very next response was a concession (\"Oh, sorry about that... I'll update my info\") followed by a sign-off."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "ALLEN DENVER HS26M MEM 0803",
+      "customer": "Samantha Taylor",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8cb6494206be3cf375",
+      "transcript": "The customer gave a \"NO_NEED_NO_ISSUES\" objection (\"None at this time\"), and the agent immediately conceded with \"All right... I appreciate your time\" without any attempt to restate value or ask a follow-up question."
+    },
     {
       "rep_name": "Anjanette Alvarado",
       "team": "ILLINOIS",
