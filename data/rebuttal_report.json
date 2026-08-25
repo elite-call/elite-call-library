@@ -1,8 +1,80 @@
 {
   "date": "2026-08-25",
-  "total_missed": 73,
-  "total_flagged": 74,
+  "total_missed": 81,
+  "total_flagged": 82,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "INDIANAPOLIS SE26E ACTIVE 0807",
+      "customer": "TREVOR EWIGLEBEN",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e14ecfd75ac88085f",
+      "transcript": "The agent missed a rebuttal opportunity. After the customer stated they didn't need service because their new system is under warranty (NO_NEED_NO_ISSUES), the agent immediately conceded with \"Okay. Yes, sir... have a good rest of your day\" without attempting to pivot to other trades or restate value."
+    },
+    {
+      "rep_name": "Lindsay Fowler",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "HAIL EXPERTS RR26C NEVER IN PROSPECT 2026",
+      "customer": "Jeremy Lalim",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e088d7bf0dd067b37",
+      "transcript": "The customer provided a script-critical objection (hard refusal/no need based on an insurance writer), and the agent's very next response was a sign-off (\"Okay... I appreciate you taking my call\") without any attempt to extend the conversation or provide a value-driven rebuttal."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "INDIANAPOLIS SE26E ACTIVE 0807",
+      "customer": "Shaun Mills",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e081f30a1e5061784",
+      "transcript": "The agent immediately gave up (\"Oh yeah, of course I will go ahead and update that\") after the customer stated they already had the service done, missing the opportunity to pivot to other trades or future needs."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "USING_COMPETITOR",
+      "cadence": "INDIANAPOLIS SE26E ACTIVE 0807",
+      "customer": "John Delisle",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e07edae204e0208d0",
+      "transcript": "The customer provided a script-critical objection regarding using a competitor (\"I've got a service contract with somebody else\"), and the agent's very next response was a compliance phrase and sign-off (\"Okay, yes sir... hope you have a good rest of your day\") without any attempt to rebut or pivot."
+    },
+    {
+      "rep_name": "Lindsay Fowler",
+      "team": "HAIL911",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "HAIL EXPERTS RR26C NEVER IN PROSPECT 2026",
+      "customer": "Sue Lee",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e07cb1e021893bcf7",
+      "transcript": "The agent missed a rebuttal opportunity when the customer said they were busy (\"not really available for anything\"). Instead of attempting to pivot or provide a brief value statement, the agent's very next response was a sign-off\"Okay. Yeah, no worries. We could just reach back out at a later date. Have a great evening, sir.\""
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "INDIANAPOLIS SE26E ACTIVE 0807",
+      "customer": "LEILA MUSSA",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e073b1e9f9fe0c341",
+      "transcript": "The agent missed a major rebuttal/pivot opportunity. When the customer said \"We're getting a new AC unit,\" the agent should have pivoted to a replacement estimate (REPLACEMENT OPP) to try and win that installation business, but instead just said \"Okay, gotcha\" and ended the call."
+    },
+    {
+      "rep_name": "Lindsay Fowler",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "HAIL EXPERTS RR26C NEVER IN PROSPECT 2026",
+      "customer": "MIKE gross",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e06cca68484a15126",
+      "transcript": "The customer offered a \"No Need\" objection (\"I don't have any houses to exteriorize\" and \"I'm not sticking money in it\"), and the agent's very next response was a sign-off (\"Okay, I'll get this updated, then have a good one\") without any attempt to pivot or explain the no-cost nature of the inspection."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "INDIANAPOLIS SE26E ACTIVE 0807",
+      "customer": "MICHAEL MASON",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8e060030e4c0b91326",
+      "transcript": "The customer provided a script-critical objection (\"We use a different company\"), and the agent's very next response was a submissive sign-off (\"No worries, thank you\") without any attempt to pivot or extend the conversation."
+    },
     {
       "rep_name": "Jonathan Andre",
       "team": "ILLINOIS",
