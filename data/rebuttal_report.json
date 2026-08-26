@@ -1,8 +1,53 @@
 {
   "date": "2026-08-26",
-  "total_missed": 89,
-  "total_flagged": 90,
+  "total_missed": 94,
+  "total_flagged": 95,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "DUKES OF AIR SE26M ACTIVE 0807",
+      "customer": "Anthony Bonelli",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8f65b473204ade0201",
+      "transcript": "The customer gave a script-critical objection (\"No, we're good\"), and the agent's very next response was a sign-off (\"All right... Have a good day\") without any attempt to rebut or pivot."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "HOUSTON SE26C ACTIVE 0807",
+      "customer": "Meena Sedhia",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8f636929bce4b02d55",
+      "transcript": "The customer provided a script-critical objection (HARD_REFUSAL) by saying \"No, I'm good. Thank you.\" The agent's very next response was a submissive sign-off (\"Okay. Yes, sir. Do you have any questions while we're on the phone?\") followed by a goodbye, making no attempt to restate value or pivot."
+    },
+    {
+      "rep_name": "David Bravo-Perez",
+      "team": "HAIL911",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G PHX HS26M PRIORITY OTHER TIER",
+      "customer": "Sarah Nygren",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8f61e0b198279c8cb5",
+      "transcript": "The customer raised a STALL_BUSY_LATER objection (\"I'm actually stepping in somewhere so I can't talk\"). The agent's very next response was a submissive sign-off (\"Alrighty, thank you. Hope you have a good one\") without any attempt to offer a callback or extend the conversation."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "ALREADY_COMPLETED",
+      "cadence": "W PALM BEACH SE26E ACTIVE 0804",
+      "customer": "Alfonso Jannotta",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8f5b388f03b39fd4b1",
+      "transcript": "The customer stated they already had the service done (ALREADY_COMPLETED). For HVAC service, this is a script-critical objection where the agent is expected to pivot to an alternative service. The agent immediately said \"Okay, yes sir well that totally works\" and ended the call without any attempt to pivot or extend the conversation."
+    },
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Unknown prospect",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a8f5700297cf90cb010",
+      "transcript": "The agent missed a rebuttal opportunity when the customer gave a hard refusal (\"I will call you when I'm ready\"), responding only with \"Yeah, no worries\" before the call ended."
+    },
     {
       "rep_name": "David Bravo-Perez",
       "team": "HAIL911",
