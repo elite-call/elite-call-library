@@ -1,8 +1,35 @@
 {
   "date": "2026-08-28",
-  "total_missed": 117,
-  "total_flagged": 119,
+  "total_missed": 120,
+  "total_flagged": 122,
   "missed_calls": [
+    {
+      "rep_name": "tim elitecall.net",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a91ec385eb1f389fdf8",
+      "transcript": "The agent missed a rebuttal opportunity when the prospect stated they had another call; the agent immediately conceded with \"No worries. Yep. Bye.\" instead of attempting to schedule a callback or provide value."
+    },
+    {
+      "rep_name": "ryan elitecall.net",
+      "team": "SALES",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "",
+      "customer": "Nick Peczkowski",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a91e8d188f530b1d3d0",
+      "transcript": "The customer provided a script-critical objection (STALL_BUSY_LATER) stating he had to run to a 300 meeting. The agent's very next response was \"Right\" and \"Okay,\" offering no rebuttal, value restatement, or attempt to schedule a specific time for the requested callback."
+    },
+    {
+      "rep_name": "Mike Siemieniec",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Unknown prospect",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a91e2ea0034e2308d72",
+      "transcript": "The customer provided a script-critical objection (\"not interested\") and the agent's very next response was a sign-off (\"Sounds good. Sounds good.\") without any attempt to extend the conversation or provide a rebuttal."
+    },
     {
       "rep_name": "Anjanette Alvarado",
       "team": "ILLINOIS",
