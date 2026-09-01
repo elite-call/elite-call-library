@@ -1,8 +1,35 @@
 {
   "date": "2026-09-01",
-  "total_missed": 101,
-  "total_flagged": 101,
+  "total_missed": 104,
+  "total_flagged": 104,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Kim Lizardi",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a9756b8eebcb20ddc30",
+      "transcript": "The customer provided a script-critical objection (NO_NEED_NO_ISSUES) by saying \"I think I'm okay at this point,\" and the agent's very next response was a sign-off (\"I appreciate your time today\") without any attempt to rebut or extend the conversation."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "A1G PHX HS26M PRIORITY OTHER TIER",
+      "customer": "Wally Johnson",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a9747a083c9345af64b",
+      "transcript": "The customer provided a script-critical objection (NO_NEED_NO_ISSUES) by saying \"Nope\" when asked if they needed anything. The agent's very next response was a sign-off (\"All right, yes sir. Well that's really good to hear\") followed by a goodbye, missing the opportunity to defend the value of a preventative tune-up."
+    },
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Kristen Marfongella",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6a97451f9f83c17361c2",
+      "transcript": "The customer provided a script-critical objection (\"We're all set\"), and the transcript ends immediately without any attempt by the agent to pivot, ask a question, or restate value."
+    },
     {
       "rep_name": "Anjanette Alvarado",
       "team": "ILLINOIS",
