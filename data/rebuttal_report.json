@@ -1,8 +1,71 @@
 {
   "date": "2026-09-09",
-  "total_missed": 135,
-  "total_flagged": 136,
+  "total_missed": 142,
+  "total_flagged": 143,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G RNO HS26P PRIORITY TIERS",
+      "customer": "Ricky Garretson",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1e6f81e628315e458",
+      "transcript": "The customer provided a script-critical objection (\"I'm working out of town right now\"), and the agent immediately conceded with a sign-off (\"Okay, yeah, well, that's really glad to hear... hope you have a good rest of your day\") without attempting to pivot to a future date or ask a diagnostic question."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G RNO HS26P PRIORITY TIERS",
+      "customer": "Sharon Daley",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1e5aaf5ef2976615c",
+      "transcript": "The agent immediately gave up with \"Oh yeah, have a good day\" after the customer's initial brush-off/denial of inquiry without attempting any diagnostic question or value statement."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Larry Herndon",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1e4c7e8915536b9e0",
+      "transcript": "The customer provided a STALL_BUSY_LATER objection (\"Oh, not ready for your call\"), and the agent's very next response was a concession and sign-off (\"Oh yeah, that's no problem. You can just give us a call whenever you're ready, okay?\") without any attempt to extend the conversation or provide value."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "PRICE_CONCERN",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Carrie Griffus",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1d699437bc3bd3792",
+      "transcript": "The customer provided a script-critical objection regarding price/budget (\"don't have the funds\"). The agent's very next response was a sign-off (\"I appreciate your time today and I hope you have a good rest of your day\") without any attempt to restate value or ask a follow-up question."
+    },
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Justin Kunz",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1cdfa05caefb10c52",
+      "transcript": "The customer provided a hard refusal (\"I don't know if I'm interested\"), and the agent's very next response was a submissive sign-off (\"Of course\") without any attempt to pivot or restate value."
+    },
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Wayne Rachlen",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1cc8398e176f8cfe5",
+      "transcript": "The customer provided a hard refusal (\"No thanks\"), and the transcript ends without the agent attempting any rebuttal or value restatement."
+    },
+    {
+      "rep_name": "Kaden Randazzo",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Jay Jackson",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa1cb76fd99028656f8",
+      "transcript": "The agent accepted a hard refusal/brush-off (\"Okay. All right. Thank you. Bye bye\") and responded with a submissive goodbye without attempting any further discovery or value restatement."
+    },
     {
       "rep_name": "Helen Wachowiak",
       "team": "HAIL911",
