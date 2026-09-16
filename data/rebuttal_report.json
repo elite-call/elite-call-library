@@ -1,8 +1,26 @@
 {
   "date": "2026-09-15",
-  "total_missed": 197,
-  "total_flagged": 200,
+  "total_missed": 199,
+  "total_flagged": 202,
   "missed_calls": [
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G HS26 ANGI DIRECT STL 0507",
+      "customer": "CaChella Sims",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa9dcd8356797f131a1",
+      "transcript": "The agent missed a rebuttal opportunity when the customer offered a stall (\"Let me get back with you... I need to contact the manager\"), responding only with \"Okay... that sounds good\" instead of attempting to extend the conversation or offer to call the manager directly."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G PHX HS26M PRIORITY OTHER TIER",
+      "customer": "Jounior Flores",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aa9d3791740bbd44c0b",
+      "transcript": "The customer provided a script-critical objection (HARD_REFUSAL\"No, thank you\"), and the agent's very next response was a sign-off (\"All right... Have a good day\") without any attempt to defend the value or ask a follow-up question."
+    },
     {
       "rep_name": "Rebekah Laughbaum",
       "team": "ILLINOIS",
