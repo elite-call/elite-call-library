@@ -1,8 +1,35 @@
 {
   "date": "2026-09-17",
-  "total_missed": 107,
-  "total_flagged": 107,
+  "total_missed": 110,
+  "total_flagged": 110,
   "missed_calls": [
+    {
+      "rep_name": "Tony",
+      "team": "HAIL911",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "NEXGEN CR26C 06192026",
+      "customer": "Unknown prospect",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aac4ed83c81ae7dfe78",
+      "transcript": "The customer provided a \"NO_NEED_NO_ISSUES\" objection (\"we're good\"), and the agent's very next response was a sign-off (\"Well, that's great... Thank you so much\") without any attempt to pivot or restate value."
+    },
+    {
+      "rep_name": "Jack Landman",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Daniel Calverley",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aac4961a66fd907d3c0",
+      "transcript": "The customer provided a script-critical objection (\"We're all set... more business than we can keep up with\"), and the agent's very next response was a sign-off (\"All right, take care\") without any attempt at a value-driven rebuttal or diagnostic question."
+    },
+    {
+      "rep_name": "Jack Landman",
+      "team": "SALES",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Gregg Davis",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aac4647471b8077e6b8",
+      "transcript": "The agent missed a rebuttal opportunity when the customer stated \"They're not interested at this time.\" The agent's very next response was a sign-off (\"Okay, sounds good. Well, I appreciate you letting me know\"), making no attempt to extend the conversation or address the refusal."
+    },
     {
       "rep_name": "Christopher Sweigert",
       "team": "ILLINOIS",
