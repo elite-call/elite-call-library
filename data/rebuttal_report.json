@@ -1,8 +1,35 @@
 {
   "date": "2026-09-18",
-  "total_missed": 31,
-  "total_flagged": 32,
+  "total_missed": 34,
+  "total_flagged": 35,
   "missed_calls": [
+    {
+      "rep_name": "Jonathan Andre",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "",
+      "customer": "Joellyn Ferro",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aada30e6b6c1749a47a",
+      "transcript": "The customer provided a script-critical objection (\"Not interested\") and the transcript ends without the agent making any attempt to rebut, restate value, or extend the conversation."
+    },
+    {
+      "rep_name": "Jonathan Andre",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "",
+      "customer": "Wendy Macke",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aad9895109f9286f92b",
+      "transcript": "The agent is identified as being with \"Elite call\" in the intro. The customer provides a script-critical objection (STALL_BUSY_LATER) by saying \"I don't have time to talk.\" The agent's next response is a confrontational statement (\"You don't know why I'm calling\") followed by the end of the transcript, failing to provide any value restatement, alternative time offer, or diagnostic question to extend the call."
+    },
+    {
+      "rep_name": "Rebekah Laughbaum",
+      "team": "ILLINOIS",
+      "objection": "SPOUSE_DECISION_MAKER",
+      "cadence": "A1G COS HS26M STL",
+      "customer": "Jennie Vialpando",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6aad8f096eb57754dd89",
+      "transcript": "The agent missed a rebuttal opportunity when the customer used the \"SPOUSE\" objection. Instead of attempting to overcome the objection or offer a specific callback time, the agent immediately conceded with \"Okay, that sounds good.\""
+    },
     {
       "rep_name": "Jack Landman",
       "team": "SALES",
