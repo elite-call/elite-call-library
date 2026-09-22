@@ -1,8 +1,80 @@
 {
   "date": "2026-09-22",
-  "total_missed": 61,
-  "total_flagged": 63,
+  "total_missed": 69,
+  "total_flagged": 71,
   "missed_calls": [
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Rose Lapham",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f98378b25cafd4cd",
+      "transcript": "The customer presented a script-critical objection (STALL_BUSY_LATER) by stating they wouldn't be around tomorrow. The agent immediately conceded by saying \"Oh, okay. Yeah, no worries\" and providing a callback number instead of attempting to pivot to a different day or asking a diagnostic question to extend the conversation."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Pantelis Vassiliou",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f601246b4071cf68",
+      "transcript": "The customer provided a script-critical objection (\"Not this time, maybe next time\"), and the agent's very next response was a submissive compliance phrase (\"Okay, no worries\") followed by a sign-off, making no attempt to extend the conversation or defend the value of the offer."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Pantelis Vassiliou",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f5b8e1d7c0f8d1f0",
+      "transcript": "The customer provided a script-critical objection (HARD_REFUSAL - \"Not interested\") and the agent's response was cut off or ended without any attempt to pivot, ask a question, or restate value."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Willie Deras",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f4afff959fc5665a",
+      "transcript": "The customer provided a script-critical objection (STALL_BUSY_LATER) by stating \"nobody's going to be around.\" The agent's very next response was a submissive sign-off (\"Oh, okay. No worries. I'll go ahead and update that then\") without any attempt to offer a different day, ask a diagnostic question, or restate value."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "NO_NEED_NO_ISSUES",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Joanne Babunovic",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f331a1b590a2a749",
+      "transcript": "The customer provided a script-critical objection (ALREADY_COMPLETED/NO_NEED) stating, \"I just had the folks that installed my garage door come by and do that not so long ago.\" The agent responded with zero-effort capitulation (\"Okay. Yeah, absolutely. Thank you so much for letting me know.\") and ended the call without any attempt to pivot or restate value."
+    },
+    {
+      "rep_name": "Braden Luschei",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "SIG B2B26 ALASKA 0910",
+      "customer": "Todd Parke",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f158011b188aa1c3",
+      "transcript": "The customer provided a script-critical objection (\"Not right now\" / STALL_BUSY_LATER) and the agent's very next response was a concession and sign-off (\"Okay, no problem... have a great rest of your week\") without attempting a value-driven rebuttal or diagnostic question."
+    },
+    {
+      "rep_name": "Grace Coss",
+      "team": "ILLINOIS",
+      "objection": "STALL_BUSY_LATER",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Hewitt Stuart",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f0cd00f19a3def8b",
+      "transcript": "The customer provided a script-critical objection (HARD_REFUSAL/STALL) by stating they were not interested and had already declined the previous day. The agent's very next response was a submissive compliance phrase (\"Okay\") without any attempt to restate value, ask a question, or offer a callback before the interaction ended."
+    },
+    {
+      "rep_name": "Anjanette Alvarado",
+      "team": "ILLINOIS",
+      "objection": "HARD_REFUSAL",
+      "cadence": "A1G TUS HS26E PRIORITY OTHER",
+      "customer": "Mark Hachenberg",
+      "trellus_url": "https://app.trellus.ai/transcripts?id=00b190d198c9a340479236d3781ed2d99b6ab2f034d6a5411e7c46",
+      "transcript": "The customer provided a script-critical objection (\"Yeah, we're good. I'm good. Thank you.\") and the agent's very next response was a submissive sign-off (\"Yeah, no worries\") without any attempt to restate value or ask a question."
+    },
     {
       "rep_name": "Braden Luschei",
       "team": "ILLINOIS",
